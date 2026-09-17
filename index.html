@@ -305,6 +305,11 @@ body.simple .top h1{font-size:19px}
 .switch span b{font-weight:600}
 
 .overlay ~ .toasts,.toasts{z-index:90}
+/* v2.1 */
+.voice-btn{width:96px;height:96px;border-radius:50%;border:0;background:var(--pri);color:#fff;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(4,120,87,.35);cursor:pointer}
+.voice-btn svg{width:44px;height:44px}
+.voice-btn.on{background:var(--red);animation:vpulse 1.2s infinite}
+@keyframes vpulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}70%{box-shadow:0 0 0 22px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
 </style>
 </head>
 <body>
@@ -314,7 +319,7 @@ body.simple .top h1{font-size:19px}
 /* =========================================================
    สวนยางพารา — แอพบริหารจัดการสวนยาง (Offline-first PWA)
    ========================================================= */
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.1.0';
 // ▼ ใส่ URL ของ Apps Script และรหัส API ตรงนี้ เพื่อให้ทุกเครื่องตั้งค่าอัตโนมัติ (ไม่บังคับ)
 const EMBED = { scriptUrl: '', apiKey: '' };
 
@@ -418,7 +423,7 @@ const TAP_SYSTEMS = ['1/2S d2 (ครึ่งต้น วันเว้นว
 
 /* ---------------- storage (IndexedDB + fallback) ---------------- */
 const COLLS = ['farms', 'plots', 'workers', 'tapping', 'sales', 'worklogs', 'payments', 'expenses', 'incomes', 'items', 'stock', 'activities', 'health', 'prices', 'events', 'claims'];
-const PHOTO_COLLS = ['health', 'expenses', 'claims', 'activities'];
+const PHOTO_COLLS = ['health', 'expenses', 'claims', 'activities', 'sales'];
 const DB = {}; COLLS.forEach(c => DB[c] = new Map());
 let META = { settings: {}, dirty: {}, lastPull: 0 };
 const memPhotos = new Map();
@@ -707,6 +712,103 @@ function compressImage(file, maxChars = 45000, startSize = 720) {
     fr.onerror = rej; fr.readAsDataURL(file);
   });
 }
+/* ---------------- QR code (byte mode, ECC M, v1–10) + PromptPay ---------------- */
+const QR = (() => {
+  // [ecPerBlock, [blocks, dataPerBlock], [blocks, dataPerBlock]?] for ECC level M
+  const TBL = [null, [10, [1, 16]], [16, [1, 28]], [26, [1, 44]], [18, [2, 32]], [24, [2, 43]], [16, [4, 27]], [18, [4, 31]], [22, [2, 38], [2, 39]], [22, [3, 36], [2, 37]], [26, [4, 43], [1, 44]]];
+  const ALIGN = [null, [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+  const EXP = new Array(512), LOG = new Array(256);
+  for (let i = 0, x = 1; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 256) x ^= 0x11d; }
+  for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+  const gmul = (a, b) => a && b ? EXP[LOG[a] + LOG[b]] : 0;
+  function rsGen(n) { let g = [1]; for (let i = 0; i < n; i++) { const ng = new Array(g.length + 1).fill(0); g.forEach((c, j) => { ng[j] ^= c; ng[j + 1] ^= gmul(c, EXP[i]); }); g = ng; } return g; }
+  function rsRem(data, n) { const g = rsGen(n); const r = new Array(n).fill(0); data.forEach(d => { const f = d ^ r.shift(); r.push(0); g.slice(1).forEach((c, j) => r[j] ^= gmul(c, f)); }); return r; }
+  const dataCap = v => { const t = TBL[v]; return t.slice(1).reduce((s, [b, d]) => s + b * d, 0); };
+  const utf8 = s => [...unescape(encodeURIComponent(s))].map(c => c.charCodeAt(0));
+  function bch(v, poly, bits) { let x = v << bits; const deg = Math.floor(Math.log2(poly)); for (let i = Math.floor(Math.log2(x || 1)); i >= deg; i--) if (x >> i & 1) x ^= poly << (i - deg); return (v << bits) | x; }
+  function encode(text) {
+    const bytes = utf8(text);
+    let v = 1; while (v <= 10 && dataCap(v) * 8 < 4 + (v < 10 ? 8 : 16) + bytes.length * 8) v++;
+    if (v > 10) throw new Error('ข้อมูลยาวเกินไปสำหรับ QR');
+    const cap = dataCap(v) * 8; const bits = [];
+    const put = (val, n) => { for (let i = n - 1; i >= 0; i--) bits.push(val >> i & 1); };
+    put(4, 4); put(bytes.length, v < 10 ? 8 : 16); bytes.forEach(b => put(b, 8));
+    for (let i = 0; i < 4 && bits.length < cap; i++) bits.push(0);
+    while (bits.length % 8) bits.push(0);
+    const cw = []; for (let i = 0; i < bits.length; i += 8) cw.push(parseInt(bits.slice(i, i + 8).join(''), 2));
+    for (let p = 0; cw.length < cap / 8; p++) cw.push(p % 2 ? 0x11 : 0xec);
+    // blocks
+    const [ec, ...groups] = TBL[v]; const blocks = []; let k = 0;
+    groups.forEach(([n, d]) => { for (let i = 0; i < n; i++) { const dat = cw.slice(k, k + d); k += d; blocks.push({ dat, ecc: rsRem(dat, ec) }); } });
+    const out = []; const maxD = Math.max(...blocks.map(b => b.dat.length));
+    for (let i = 0; i < maxD; i++) blocks.forEach(b => { if (i < b.dat.length) out.push(b.dat[i]); });
+    for (let i = 0; i < ec; i++) blocks.forEach(b => out.push(b.ecc[i]));
+    // matrix
+    const size = v * 4 + 17; const M = Array.from({ length: size }, () => new Array(size).fill(null)); const F = Array.from({ length: size }, () => new Array(size).fill(false));
+    const set = (r, c, val) => { M[r][c] = val ? 1 : 0; F[r][c] = true; };
+    const finder = (r, c) => { for (let i = -1; i <= 7; i++) for (let j = -1; j <= 7; j++) { const rr = r + i, cc = c + j; if (rr < 0 || cc < 0 || rr >= size || cc >= size) continue; const on = i >= 0 && i <= 6 && j >= 0 && j <= 6 && (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4)); set(rr, cc, on); } };
+    finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
+    for (let i = 8; i < size - 8; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+    const al = ALIGN[v];
+    al.forEach((r, ri) => al.forEach((c, ci) => { const L = al.length - 1; if ((ri === 0 && ci === 0) || (ri === 0 && ci === L) || (ri === L && ci === 0)) return; for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) set(r + i, c + j, Math.max(Math.abs(i), Math.abs(j)) !== 1); }));
+    // reserve format + version areas
+    for (let i = 0; i < 9; i++) { if (!F[8][i]) set(8, i, 0); if (!F[i][8]) set(i, 8, 0); }
+    for (let i = 0; i < 8; i++) { set(8, size - 1 - i, 0); set(size - 1 - i, 8, 0); }
+    set(size - 8, 8, 1); // dark module
+    if (v >= 7) { const vb = bch(v, 0x1f25, 12); for (let i = 0; i < 18; i++) { const b = vb >> i & 1; const a = Math.floor(i / 3), c = size - 11 + i % 3; set(a, c, b); set(c, a, b); } }
+    // data placement
+    const dbits = []; out.forEach(b => { for (let i = 7; i >= 0; i--) dbits.push(b >> i & 1); });
+    const pos = []; let up = true;
+    for (let c = size - 1; c > 0; c -= 2) { if (c === 6) c--; for (let t = 0; t < size; t++) { const r = up ? size - 1 - t : t; for (const cc of [c, c - 1]) if (!F[r][cc]) pos.push([r, cc]); } up = !up; }
+    const MASKS = [(r, c) => (r + c) % 2 === 0, (r) => r % 2 === 0, (r, c) => c % 3 === 0, (r, c) => (r + c) % 3 === 0, (r, c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0, (r, c) => (r * c) % 2 + (r * c) % 3 === 0, (r, c) => ((r * c) % 2 + (r * c) % 3) % 2 === 0, (r, c) => ((r + c) % 2 + (r * c) % 3) % 2 === 0];
+    const build = m => {
+      const G = M.map(row => row.slice());
+      pos.forEach(([r, c], i) => { G[r][c] = (dbits[i] || 0) ^ (MASKS[m](r, c) ? 1 : 0); });
+      const fb = bch((0 << 3) | m, 0x537, 10) ^ 0x5412; // ECC M = 00
+      for (let i = 0; i < 15; i++) {
+        const b = fb >> i & 1;
+        if (i < 6) G[i][8] = b; else if (i === 6) G[7][8] = b; else if (i === 7) G[8][8] = b; else if (i === 8) G[8][7] = b; else G[8][14 - i] = b;
+        if (i < 8) G[8][size - 1 - i] = b; else G[size - 15 + i][8] = b;
+      }
+      return G;
+    };
+    const penalty = G => {
+      let p = 0;
+      for (let r = 0; r < size; r++) for (const line of [G[r], G.map(x => x[r])]) { let run = 1; for (let i = 1; i <= size; i++) { if (i < size && line[i] === line[i - 1]) run++; else { if (run >= 5) p += run - 2; run = 1; } } const s = line.join(''); p += 40 * ((s.match(/(?=1011101(0000))/g) || []).length + (s.match(/(?=(0000)1011101)/g) || []).length); }
+      for (let r = 0; r < size - 1; r++) for (let c = 0; c < size - 1; c++) { const s = G[r][c] + G[r + 1][c] + G[r][c + 1] + G[r + 1][c + 1]; if (s === 0 || s === 4) p += 3; }
+      const dark = G.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0); p += Math.floor(Math.abs(dark * 100 / (size * size) - 50) / 5) * 10;
+      return p;
+    };
+    let best = null, bp = Infinity;
+    for (let m = 0; m < 8; m++) { const G = build(m); const pp = penalty(G); if (pp < bp) { bp = pp; best = G; } }
+    return best;
+  }
+  function toCanvas(text, scale = 8, margin = 4) {
+    const G = encode(text); const n = G.length; const cv = document.createElement('canvas'); cv.width = cv.height = (n + margin * 2) * scale;
+    const ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height); ctx.fillStyle = '#000';
+    G.forEach((row, r) => row.forEach((b, c) => { if (b) ctx.fillRect((c + margin) * scale, (r + margin) * scale, scale, scale); }));
+    return cv;
+  }
+  return { encode, toCanvas };
+})();
+
+/* PromptPay (EMVCo / Thai QR) */
+function crc16(s) { let crc = 0xffff; for (const ch of utf8Bytes(s)) { crc ^= ch << 8; for (let i = 0; i < 8; i++) crc = crc & 0x8000 ? (crc << 1) ^ 0x1021 : crc << 1; crc &= 0xffff; } return crc.toString(16).toUpperCase().padStart(4, '0'); }
+function utf8Bytes(s) { return [...unescape(encodeURIComponent(s))].map(c => c.charCodeAt(0)); }
+function ppTarget(id) {
+  const d = String(id || '').replace(/[^0-9]/g, '');
+  if (d.length === 10 && d[0] === '0') return { type: 'phone', sub: '01', val: '0066' + d.slice(1) };
+  if (d.length === 13) return { type: 'id', sub: '02', val: d };
+  if (d.length === 15) return { type: 'ewallet', sub: '03', val: d };
+  return null;
+}
+function promptPayPayload(id, amount) {
+  const t = ppTarget(id); if (!t) throw new Error('หมายเลขพร้อมเพย์ไม่ถูกต้อง (เบอร์มือถือ 10 หลัก หรือเลขบัตร 13 หลัก)');
+  const f = (tag, val) => tag + String(val.length).padStart(2, '0') + val;
+  const amt = num(amount) > 0 ? r2(amount).toFixed(2) : '';
+  let p = f('00', '01') + f('01', amt ? '12' : '11') + f('29', f('00', 'A000000677010111') + f(t.sub, t.val)) + f('58', 'TH') + f('53', '764') + (amt ? f('54', amt) : '') + '6304';
+  return p + crc16(p);
+}
 /* ---------------- domain helpers ---------------- */
 let curFarm = (() => { try { return localStorage.getItem('rf_farm') || 'all'; } catch (e) { return 'all'; } })();
 const farmOf = r => r.farmId || get('plots', r.plotId)?.farmId || '';
@@ -923,6 +1025,7 @@ const SCHEMA = {
       { k: 'shareMode', l: 'แบ่งระหว่างคนกรีด', t: 'seg', opt: { equal: 'หารเท่ากัน', custom: 'กำหนดสัดส่วนเอง' }, def: 'equal', show: d => d.split === 'share' && (d.workerIds || []).length > 1, re: 1 },
       { k: 'shares', l: 'สัดส่วนของแต่ละคน (% ของส่วนคนกรีด)', t: 'shares', show: d => d.split === 'share' && d.shareMode === 'custom' && (d.workerIds || []).length > 1 },
       { k: 'received', l: 'ได้รับเงินจากผู้ซื้อแล้ว', t: 'chk', def: true },
+      { k: 'photos', l: 'รูปใบชั่ง/บิลรับซื้อ', t: 'photos', max: 2, ocr: 'scale' },
       { k: 'note', l: 'หมายเหตุ', t: 'area' },
     ],
     onChange: (k, d) => {
@@ -1152,7 +1255,7 @@ function fieldHtml(f, d) {
     case 'chk': return `<div class="${cls}" data-k="${f.k}"><label class="switch"><input type="checkbox" id="${id}"${v ? ' checked' : ''}> ${esc(f.l)}</label></div>`;
     case 'photos': {
       const arr = Array.isArray(v) ? v : []; const max = f.max || 4;
-      inner = `<div class="photos">${arr.map((ref, i) => `<div class="ph"><img data-ref="${esc(ref)}" alt="">${isLocalRef(ref) ? '<span class="badge amber ph-b">รออัปโหลด</span>' : ''}<button type="button" class="ph-x" data-rmphoto="${i}" aria-label="ลบรูป">${ic('x')}</button></div>`).join('')}${arr.length < max ? `<label class="ph add">${ic('camera')}<span>เพิ่มรูป</span><input type="file" accept="image/*" style="display:none"></label>` : ''}</div>${f.ocr && arr.length ? `<button type="button" class="btn sm" data-ocr style="margin-top:8px">${ic('search')} อ่านยอดเงินจากใบเสร็จ</button><div class="hint" data-ocrout></div>` : ''}`;
+      inner = `<div class="photos">${arr.map((ref, i) => `<div class="ph"><img data-ref="${esc(ref)}" alt="">${isLocalRef(ref) ? '<span class="badge amber ph-b">รออัปโหลด</span>' : ''}<button type="button" class="ph-x" data-rmphoto="${i}" aria-label="ลบรูป">${ic('x')}</button></div>`).join('')}${arr.length < max ? `<label class="ph add">${ic('camera')}<span>เพิ่มรูป</span><input type="file" accept="image/*" style="display:none"></label>` : ''}</div>${f.ocr && arr.length ? `<button type="button" class="btn sm" data-ocr style="margin-top:8px">${ic('search')} ${f.ocr === 'scale' ? 'อ่านน้ำหนัก/ราคาจากใบชั่ง' : 'อ่านยอดเงินจากใบเสร็จ'}</button><div class="hint" data-ocrout></div>` : ''}`;
       break;
     }
     case 'shares': {
@@ -1239,19 +1342,29 @@ function openForm(coll, rec, preset = {}, after) {
         const ob = $('[data-ocr]', w);
         if (ob) ob.onclick = async () => {
           const out = $('[data-ocrout]', w);
-          ob.disabled = true; ob.textContent = 'กำลังอ่านใบเสร็จ...';
+          ob.disabled = true; ob.textContent = f.ocr === 'scale' ? 'กำลังอ่านใบชั่ง...' : 'กำลังอ่านใบเสร็จ...';
           try {
             let ref = (d[f.k] || [])[0];
             if (isLocalRef(ref)) { const dataUrl = await store.photo('get', ref); const up = await api('photoUpload', { dataUrl, name: 'receipt' }); const nref = 'd:' + up.id; await store.photo('put', nref, dataUrl); await store.photo('del', ref); d[f.k] = d[f.k].map(x => x === ref ? nref : x); ref = nref; }
             const r = await api('ocr', { id: String(ref).slice(2) });
             const got = [];
+            if (f.ocr === 'scale') {
+              const sc = parseScaleText(r.text || '');
+              if (sc.weight) { d.weight = sc.weight; got.push('น้ำหนัก ' + fmt(sc.weight) + ' กก.'); }
+              if (sc.price) { d.price = sc.price; got.push('ราคา ' + fmt(sc.price) + ' บ./กก.'); }
+              if (sc.drc && shareProduct(d)) { d.drc = sc.drc; got.push('DRC ' + fmt(sc.drc) + '%'); }
+              if (r.date && /^\d{4}-\d{2}-\d{2}$/.test(r.date)) { d.date = r.date; got.push('วันที่ ' + thDate(r.date)); }
+              if (r.vendor && !d.buyer && /[ก-๛A-Za-z]{2}/.test(r.vendor)) { d.buyer = r.vendor; got.push('ร้าน ' + r.vendor); }
+              if (sc.amount && d.weight && d.price) { const calc = saleCalc(d).gross; if (Math.abs(calc - sc.amount) > Math.max(5, sc.amount * 0.02)) got.push(`⚠️ ยอดในบิล ${baht(sc.amount)} ไม่ตรงกับที่คำนวณ ${baht(calc)}`); }
+            } else {
             if (r.amount) { d.amount = r.amount; got.push('ยอด ' + baht(r.amount)); }
             if (r.date && /^\d{4}-\d{2}-\d{2}$/.test(r.date)) { d.date = r.date; got.push('วันที่ ' + thDate(r.date)); }
-            if (r.vendor && !d.vendor) { d.vendor = r.vendor; got.push('ร้าน ' + r.vendor); }
+            if (r.vendor && !d.vendor && /[ก-๛A-Za-z]{2}/.test(r.vendor)) { d.vendor = r.vendor; got.push('ร้าน ' + r.vendor); }
+            }
             toast(got.length ? 'อ่านได้: ' + got.join(' · ') + ' — ตรวจสอบก่อนบันทึก' : 'อ่านตัวเลขไม่ชัด กรุณากรอกเอง', got.length ? 'ok' : 'warn');
             draw();
             const o2 = $(`[data-k="${f.k}"] [data-ocrout]`, box); if (o2 && r.text) o2.innerHTML = `<details><summary>ข้อความที่อ่านได้</summary><pre style="white-space:pre-wrap;font-size:12px">${esc(r.text.slice(0, 1500))}</pre></details>`;
-          } catch (e) { toast('อ่านใบเสร็จไม่สำเร็จ: ' + e.message, 'err'); ob.disabled = false; ob.textContent = 'อ่านยอดเงินจากใบเสร็จ'; }
+          } catch (e) { toast('อ่านใบเสร็จไม่สำเร็จ: ' + e.message, 'err'); ob.disabled = false; ob.textContent = f.ocr === 'scale' ? 'อ่านน้ำหนัก/ราคาจากใบชั่ง' : 'อ่านยอดเงินจากใบเสร็จ'; }
         };
         return;
       }
@@ -1378,12 +1491,12 @@ function render() {
 
 function quickAdd() {
   const opts = [
-    ['__tapday', 'drop', 'กรีดหลายแปลง'], ['tapping', 'drop', 'บันทึกกรีด 1 แปลง'], ['sales', 'coins', 'ขายยาง'], ['expenses', 'receipt', 'รายจ่าย'], ['worklogs', 'clock', 'ค่าแรงรายวัน'],
+    ['__voice', 'mic', 'พูด/พิมพ์บันทึก'], ['__tapday', 'drop', 'กรีดหลายแปลง'], ['tapping', 'drop', 'บันทึกกรีด 1 แปลง'], ['sales', 'coins', 'ขายยาง'], ['expenses', 'receipt', 'รายจ่าย'], ['worklogs', 'clock', 'ค่าแรงรายวัน'],
     ['payments', 'wallet', 'จ่าย/เบิกเงิน'], ['incomes', 'cash', 'รายรับอื่น'], ['activities', 'sprout', 'งานดูแลสวน'], ['health', 'health', 'สุขภาพต้น'],
     ['prices', 'trend', 'ราคายาง'], ['events', 'bell', 'นัดหมาย'], ['stock', 'box', 'เบิกวัสดุ'], ['claims', 'book', 'สิทธิ กยท.'],
   ];
   const ov = openSheet({ title: 'บันทึกรายการใหม่', body: `<div class="menu-grid">${opts.map(([c, i, l]) => `<button data-q="${c}"><span class="q">${ic(i)}</span>${l}</button>`).join('')}</div>` });
-  $$('[data-q]', ov).forEach(b => b.onclick = () => { closeSheet(ov, true); if (b.dataset.q === '__tapday') go('tapday'); else openForm(b.dataset.q); });
+  $$('[data-q]', ov).forEach(b => b.onclick = () => { closeSheet(ov, true); if (b.dataset.q === '__tapday') go('tapday'); else if (b.dataset.q === '__voice') go('voice'); else openForm(b.dataset.q); });
 }
 
 function setupPullToRefresh() {
@@ -1658,10 +1771,10 @@ ROUTES.menu = {
   title: 'เมนูทั้งหมด',
   render(main) {
     const groups = [
-      ['งานประจำวัน', [['tapday', 'drop', 'กรีดหลายแปลง'], ['tapping', 'drop', 'บันทึกการกรีด'], ['sales', 'coins', 'ขายยาง'], ['prices', 'trend', 'ราคายาง'], ['calendar', 'cal', 'ปฏิทิน/นัดหมาย'], ['weather', 'cloud', 'สภาพอากาศ']]],
-      ['การเงิน', [['reports', 'chart', 'รายงาน/กำไรขาดทุน'], ['expenses', 'receipt', 'รายจ่าย'], ['incomes', 'cash', 'รายรับอื่นๆ']]],
+      ['งานประจำวัน', [['voice', 'mic', 'พูด/พิมพ์บันทึก'], ['tapday', 'drop', 'กรีดหลายแปลง'], ['tapping', 'drop', 'บันทึกการกรีด'], ['sales', 'coins', 'ขายยาง'], ['prices', 'trend', 'ราคายาง'], ['calendar', 'cal', 'ปฏิทิน/นัดหมาย'], ['weather', 'cloud', 'สภาพอากาศ']]],
+      ['การเงิน', [['reports', 'chart', 'รายงาน/กำไรขาดทุน'], ['expenses', 'receipt', 'รายจ่าย'], ['incomes', 'cash', 'รายรับอื่นๆ'], ['tax', 'book', 'สรุปรายได้ยื่นภาษี']]],
       ['แรงงาน', [['workers', 'users', 'คนงาน/ยอดค้างจ่าย'], ['worklogs', 'clock', 'ค่าแรงรายวัน'], ['payments', 'wallet', 'จ่าย/เบิกเงิน']]],
-      ['สวนและการดูแล', [['farms', 'map', 'สวน'], ['plots', 'leaf', 'แปลงยาง'], ['activities', 'sprout', 'งานดูแลสวน/ปุ๋ย'], ['health', 'health', 'สุขภาพต้นยาง'], ['inventory', 'box', 'คลังวัสดุ'], ['claims', 'book', 'สิทธิ/เงินช่วยเหลือ กยท.']]],
+      ['สวนและการดูแล', [['farms', 'map', 'สวน'], ['plots', 'leaf', 'แปลงยาง'], ['activities', 'sprout', 'งานดูแลสวน/ปุ๋ย'], ['health', 'health', 'สุขภาพต้นยาง'], ['inventory', 'box', 'คลังวัสดุ'], ['claims', 'book', 'สิทธิ/เงินช่วยเหลือ กยท.'], ['fert', 'sprout', 'คำนวณปุ๋ย'], ['plotmap', 'map', 'วัดพื้นที่แปลง GPS']]],
       ['เครื่องมือ', [['calc', 'calc', 'เครื่องคิดเลข'], ['guide', 'book', 'คู่มือสวนยาง'], ['settings', 'gear', 'ตั้งค่า/ซิงค์'], ['diag', 'info', 'ตรวจสอบระบบ']]],
     ];
     main.innerHTML = groups.map(([g, items]) => `<div class="sec-title">${g}</div><div class="menu-grid">${items.map(([r, i, l]) => `<button data-go="${r}"><span class="q">${ic(i)}</span>${l}</button>`).join('')}</div>`).join('') +
@@ -1900,6 +2013,7 @@ ROUTES.plot = {
       <div class="sec-title">${ic('sprout')} งานดูแลล่าสุด</div><div class="list">${acts.length ? acts.slice(0, 8).map(r => ROWS.activities(r).replace('<span class="t">', `<span class="t">${thDate(r.date)} · `)).join('') : emptyBox('ยังไม่มีบันทึก', 'sprout')}</div>
       <div class="sec-title">${ic('health')} สุขภาพต้นยาง</div><div class="list">${hl.length ? hl.slice(0, 8).map(ROWS.health).join('') : emptyBox('ไม่มีปัญหา', 'health')}</div>
       <div class="sec-title">${ic('drop')} การกรีดล่าสุด</div><div class="list">${taps.length ? taps.sort(byDateDesc).slice(0, 10).map(r => ROWS.tapping(r).replace('<span class="t">', `<span class="t">${thDate(r.date)} · `)).join('') : emptyBox('ยังไม่มีบันทึกในช่วงนี้', 'drop')}</div>`;
+      if (typeof plotExtra === 'function') plotExtra(main, p);
       bindPeriod(main, st, draw);
     };
     draw();
@@ -2393,7 +2507,8 @@ ROUTES.tapday = {
     const initRow = p => {
       const last = list('tapping', r => r.plotId === p.id && r.date <= st.date).sort(byDateDesc)[0];
       const assigned = activeWorkers().filter(w => (w.plotIds || []).includes(p.id)).map(w => w.id);
-      return { plotId: p.id, on: !done.has(p.id), workerIds: last?.workerIds?.filter(id => get('workers', id)) || assigned, trees: last && num(last.trees) ? num(last.trees) : num(p.trees) || '', product: last?.product || 'cuplump', qty: '', startTime: last?.startTime || '' };
+      const due = typeof tapDue === 'function' ? tapDue(p, st.date) : { due: true };
+      return { plotId: p.id, due, on: !done.has(p.id) && (due.due || due.noSystem), workerIds: last?.workerIds?.filter(id => get('workers', id)) || assigned, trees: last && num(last.trees) ? num(last.trees) : num(p.trees) || '', product: last?.product || 'cuplump', qty: '', startTime: last?.startTime || '' };
     };
     if (!st.rows || st.rowsDate !== st.date) { st.rows = plots.map(initRow); st.rowsDate = st.date; }
     const ws = activeWorkers();
@@ -2407,7 +2522,7 @@ ROUTES.tapday = {
       <div class="row wrap" style="margin-top:10px"><button class="btn sm" id="tdAll">เลือกทุกแปลง</button><button class="btn sm" id="tdNone">ไม่เลือก</button><button class="btn sm danger" id="tdRainAll">🌧️ วันนี้ฝนตก หยุดกรีดทุกแปลง</button></div></div>
       ${st.rows.map((r, i) => { const p = get('plots', r.plotId); return `
       <div class="card" data-i="${i}" style="${r.on ? '' : 'opacity:.6'}">
-        <label class="switch" style="padding:0 0 6px"><input type="checkbox" data-f="on"${r.on ? ' checked' : ''}> <b>${esc(p.name)}</b> ${done.has(p.id) ? '<span class="badge">บันทึกแล้ววันนี้</span>' : ''}<span class="sp"></span><span class="xs faint">${fmt(p.trees)} ต้น</span></label>
+        <label class="switch" style="padding:0 0 6px"><input type="checkbox" data-f="on"${r.on ? ' checked' : ''}> <b>${esc(p.name)}</b> ${done.has(p.id) ? '<span class="badge">บันทึกแล้ววันนี้</span>' : r.due && !r.due.noSystem ? `<span class="badge ${r.due.due ? '' : 'gray'}">${r.due.due ? 'ถึงรอบ' : r.due.inRest ? 'พักผลัดใบ' : 'พักตามระบบ'}</span>` : ''}<span class="sp"></span><span class="xs faint">${fmt(p.trees)} ต้น</span></label>
         ${r.on ? `<div class="mchips" style="margin-bottom:8px">${ws.map(w => `<label><input type="checkbox" data-w="${w.id}"${r.workerIds.includes(w.id) ? ' checked' : ''}>${esc(w.name)}</label>`).join('') || '<span class="hint">ยังไม่มีคนงาน</span>'}</div>
         <div class="fields">
           <div class="field third"><label class="fl">ต้นที่กรีด</label><input class="inp" type="number" inputmode="numeric" data-f="trees" value="${esc(r.trees)}"></div>
@@ -2485,6 +2600,8 @@ ROUTES.home.render = function (main) {
       ${big('data-new="expenses"', '🧾', 'รายจ่าย')}
       ${big('data-go="reports"', '📊', 'ยอดเดือนนี้')}
       ${big('data-go="calendar"', '📅', 'นัดหมาย')}
+      ${big('data-go="voice"', '🎤', 'พูดบันทึก')}
+      ${big('data-go="prices"', '📈', 'ราคายาง')}
     </div>
     <div class="card"><h3>${thYM(ym)}</h3>
       <div class="simple-kpi"><span>ได้รับ</span><b class="pos">${baht(ownerIn)}</b></div>
@@ -2713,6 +2830,695 @@ ROUTES.diag = {
     })();
   }
 };
+/* =========================================================
+   v2.1 features: พูด/พิมพ์บันทึก, อ่านใบชั่ง, พร้อมเพย์ QR, สลิปคนงาน,
+   สรุปรายได้ยื่นภาษี, รอบกรีด/พักผลัดใบ, วัดพื้นที่แปลงด้วย GPS,
+   คำนวณปุ๋ย, แจ้งเตือนราคา, ฝนเทียบผลผลิต
+   ========================================================= */
+Object.assign(ICONS, {
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-4M14 21v-3"/>',
+  image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/>',
+});
+const safeJSON = (v, def) => { if (v && typeof v === 'object') return v; try { return v ? JSON.parse(v) : def; } catch (e) { return def; } };
+
+/* ---------------- Thai numbers & text parsing ---------------- */
+const TH_DIGITS = { 'ศูนย์': 0, 'หนึ่ง': 1, 'เอ็ด': 1, 'สอง': 2, 'ยี่': 2, 'สาม': 3, 'สี่': 4, 'ห้า': 5, 'หก': 6, 'เจ็ด': 7, 'แปด': 8, 'เก้า': 9 };
+const TH_UNITS = { 'สิบ': 10, 'ร้อย': 100, 'พัน': 1000, 'หมื่น': 1e4, 'แสน': 1e5, 'ล้าน': 1e6 };
+const TH_NUM_RE = /(?:ศูนย์|หนึ่ง|เอ็ด|สอง|ยี่|สาม|สี่|ห้า|หก|เจ็ด|แปด|เก้า|สิบ|ร้อย|พัน|หมื่น|แสน|ล้าน|จุด)+/g;
+function thaiWordsValue(s) {
+  const toks = s.match(/ศูนย์|หนึ่ง|เอ็ด|สอง|ยี่|สาม|สี่|ห้า|หก|เจ็ด|แปด|เก้า|สิบ|ร้อย|พัน|หมื่น|แสน|ล้าน|จุด/g) || [];
+  let total = 0, cur = 0, dec = null;
+  for (const t of toks) {
+    if (dec !== null) { if (t in TH_DIGITS) dec += String(TH_DIGITS[t]); continue; }
+    if (t === 'จุด') { dec = ''; continue; }
+    if (t in TH_DIGITS) { cur = cur && cur < 10 ? cur * 10 + TH_DIGITS[t] : TH_DIGITS[t]; continue; }
+    const u = TH_UNITS[t];
+    if (u === 1e6) { total = (total + cur) * 1e6; cur = 0; }
+    else { total += (cur || 1) * u; cur = 0; }
+  }
+  const v = total + cur;
+  return dec ? parseFloat(v + '.' + dec) : v;
+}
+function normalizeThaiText(text) {
+  let s = String(text || '').replace(/\u0e4d\u0e32/g, 'ำ').replace(/[๐-๙]/g, c => '๐๑๒๓๔๕๖๗๘๙'.indexOf(c)).replace(/(\d),(\d{3})/g, '$1$2');
+  s = s.replace(TH_NUM_RE, (m, off, str) => {
+    const next = str[off + m.length] || '';
+    if (/^(?:ร้อย|พัน|หมื่น|แสน|ล้าน)/.test(m) && off > 0 && /[ก-๛]/.test(str[off - 1])) return m; // เรียบร้อย
+    if (/^พัน/.test(m) && next === 'ธ') return m; // พันธุ์
+    if (m === 'จุด') return m;
+    const v = thaiWordsValue(m); return isFinite(v) ? ` ${v} ` : m;
+  });
+  s = s.replace(/(\d+(?:\.\d+)?)\s*(กิโล(?:กรัม)?|กก\.?|โล|บาท|ต้น|วัน)\s*ครึ่ง/g, (m, n, u) => `${num(n) + 0.5} ${u}`);
+  return s.replace(/\s+/g, ' ').trim();
+}
+const numAfter = (s, re) => { const m = s.match(re); return m ? num(m[1]) : null; };
+
+function parseScaleText(text) {
+  const lines = String(text || '').split(/\n+/).map(x => normalizeThaiText(x)).filter(Boolean);
+  const nums = l => (l.match(/\d+(?:\.\d+)?/g) || []).map(Number);
+  const out = { weight: null, price: null, drc: null, amount: null };
+  let wPri = 0, gross = null, tare = null;
+  lines.forEach((l, i) => {
+    const ns = nums(l).filter(x => x > 0); const nx = nums(lines[i + 1] || '').filter(x => x > 0);
+    const pick = arr => arr.length ? arr[arr.length - 1] : null;
+    const val = ns.length ? pick(ns) : pick(nx);
+    if (val === null) return;
+    if (/(drc|ดีอาร์ซี|เนื้อยาง|เปอร์เซ็น|%)/i.test(l)) { const v = [...ns, ...nx].find(x => x >= 10 && x <= 100); if (v && !out.drc) out.drc = v; return; }
+    if (/(ราคา|บาท\s*\/\s*กก|บ\.?\s*\/\s*กก|price|@)/i.test(l) && !/(รวม|จำนวนเงิน|เป็นเงิน)/.test(l)) { const v = [...ns, ...nx].find(x => x >= 5 && x <= 500); if (v && !out.price) out.price = v; return; }
+    if (/(รวมเงิน|จำนวนเงิน|เป็นเงิน|ยอดเงิน|รวมทั้งสิ้น|ยอดสุทธิ|total|amount)/i.test(l)) { const v = Math.max(...[...ns, ...nx]); if (v > (out.amount || 0)) out.amount = v; return; }
+    if (/(ชั่งเข้า|ขาเข้า|รวมรถ|gross)/i.test(l)) { gross = val; return; }
+    if (/(ชั่งออก|ขาออก|น้ำหนักรถ|tare)/i.test(l)) { tare = val; return; }
+    let pri = 0;
+    if (/(สุทธิ|net)/i.test(l) && !/บาท/.test(l)) pri = 3;
+    else if (/(น้ำหนัก|นน\.?|weight|กก\.?|kg|กิโล)/i.test(l) && !/(บาท|ราคา)/.test(l)) pri = 2;
+    if (pri > wPri && val > 0 && val < 100000) { wPri = pri; out.weight = val; }
+  });
+  if (!out.weight && gross && tare && gross > tare) out.weight = r2(gross - tare);
+  if (!out.price && out.weight && out.amount) { const p = r2(out.amount / out.weight); if (p >= 5 && p <= 500) out.price = p; }
+  return out;
+}
+
+function parseVoice(text) {
+  const raw = String(text || '').trim();
+  const s = normalizeThaiText(raw);
+  const has = re => re.test(s);
+  const notes = [];
+  const preset = {};
+  // date
+  if (has(/เมื่อวานซืน/)) preset.date = addDays(today(), -2);
+  else if (has(/เมื่อวาน/)) preset.date = addDays(today(), -1);
+  // entities
+  const longestMatch = (items, name) => items.filter(x => name(x) && s.includes(name(x))).sort((a, b) => name(b).length - name(a).length);
+  const plots = longestMatch(list('plots', inFarm), p => p.name);
+  const workers = longestMatch(activeWorkers(), w => w.name);
+  const kg = numAfter(s, /(\d+(?:\.\d+)?)\s*(?:กิโลกรัม|กิโล|กก\.?|โล)(?!ละ)/);
+  const price = numAfter(s, /(?:ราคา|กิโลละ|โลละ|กก\.?ละ|ละ)\s*(\d+(?:\.\d+)?)/) ?? numAfter(s, /(\d+(?:\.\d+)?)\s*บาท\s*(?:ต่อ|\/)\s*(?:กิโล|กก)/);
+  const drc = numAfter(s, /(?:ดีอาร์ซี|drc|เปอร์เซ็นต์|เปอร์เซ็น)\s*(\d+(?:\.\d+)?)/i) ?? numAfter(s, /(\d+(?:\.\d+)?)\s*(?:เปอร์เซ็นต์|เปอร์เซ็น|%)/);
+  const bahtAmt = numAfter(s, /(\d+(?:\.\d+)?)\s*บาท(?!\s*(?:ต่อ|\/))/);
+  const trees = numAfter(s, /(\d+)\s*ต้น/);
+  const days = has(/ครึ่งวัน/) ? 0.5 : numAfter(s, /(\d+(?:\.\d+)?)\s*วัน/);
+  const product = has(/รมควัน/) ? 'rss' : has(/ยางแผ่น|แผ่นดิบ/) ? 'usss' : has(/น้ำยาง/) ? 'latex' : has(/เศษยาง|ขี้ยางเศษ|ยางเศษ/) ? 'scrap' : has(/ก้อนถ้วย|ขี้ยาง|ยางก้อน|ยางถ้วย/) ? 'cuplump' : '';
+  let coll = '';
+  if (has(/เบิก/) && workers.length) coll = 'payments';
+  else if (has(/จ่าย(?:เงิน|ค่าจ้าง|ส่วนแบ่ง)?/) && workers.length && !has(/ซื้อ|ค่าปุ๋ย|ค่ายา/)) coll = 'payments';
+  else if (has(/ขาย/)) coll = 'sales';
+  else if (has(/ค่าแรง|จ้าง|ทำงาน/) && workers.length) coll = 'worklogs';
+  else if (has(/กรีด|หยุดกรีด/)) coll = 'tapping';
+  else if (has(/ใส่ปุ๋ย|ฉีด|ตัดหญ้า|ถางหญ้า|พ่นยา|ทาหน้ายาง/) && !has(/ซื้อ/)) coll = 'activities';
+  else if (has(/ซื้อ|ค่า|จ่าย/) && bahtAmt) coll = 'expenses';
+  else if (has(/ราคา/) && price) coll = 'prices';
+  if (!coll) return { coll: '', preset, notes: ['ไม่เข้าใจว่าเป็นรายการอะไร ลองพูดคำว่า กรีด / ขาย / ซื้อ / ค่าแรง / เบิก'], text: s };
+  if (plots.length) preset.plotId = plots[0].id;
+  if (coll === 'sales') {
+    if (product) preset.product = product;
+    if (kg) preset.weight = kg;
+    if (price) preset.price = price;
+    if (drc) preset.drc = drc;
+    const buyers = [...new Set(list('sales').map(r => r.buyer).filter(Boolean))].filter(b => s.includes(b)).sort((a, b) => b.length - a.length);
+    if (buyers.length) preset.buyer = buyers[0];
+    else { const m = raw.match(/ร้าน\s*([ก-๛A-Za-z0-9]+)/); if (m) preset.buyer = 'ร้าน' + m[1]; }
+    if (workers.length) { preset.workerIds = workers.map(w => w.id); preset.split = 'share'; }
+    if (!kg) notes.push('ไม่ได้ยินน้ำหนัก'); if (!price) notes.push('ไม่ได้ยินราคา');
+  } else if (coll === 'tapping') {
+    if (product && ['cuplump', 'latex', 'usss'].includes(product)) preset.product = product;
+    if (kg) preset.qty = kg;
+    if (trees) preset.trees = trees;
+    if (drc) preset.drc = drc;
+    if (workers.length) preset.workerIds = workers.map(w => w.id);
+    if (has(/หยุดกรีด|ไม่ได้กรีด|งดกรีด/)) preset.rain = 'skip';
+    else if (has(/ฝนตกหลัง/)) preset.rain = 'after';
+    else if (has(/ฝน|เปลือกเปียก/)) preset.rain = 'before';
+    if (!plots.length) notes.push('ไม่ได้ยินชื่อแปลง');
+  } else if (coll === 'expenses') {
+    preset.amount = bahtAmt;
+    const cats = expCats(); const hit = cats.find(c => c.split(/[\/ ]/).some(w => w.length > 1 && s.includes(w)));
+    if (hit) preset.cat = hit;
+    const item = s.replace(/(\d+-\d+-\d+)|\d+(?:\.\d+)?\s*(?:บาท|กิโลกรัม|กิโล|กก\.?|โล|กระสอบ|ลิตร|ถุง|ขวด)?/g, (m, f) => f ? ` ${f} ` : ' ').replace(/ซื้อ|จ่าย|ค่า(?=\s)|วันนี้|เมื่อวาน(?:ซืน)?|ราคา|ที่ร้าน|ร้าน\S*/g, ' ').replace(/\s+/g, ' ').trim();
+    if (item) preset.item = item.slice(0, 60);
+    const vm = raw.match(/ร้าน\s*([ก-๛A-Za-z0-9]+)/); if (vm) preset.vendor = 'ร้าน' + vm[1];
+    const qm = s.match(/(\d+(?:\.\d+)?)\s*(กระสอบ|ลิตร|ถุง|ขวด|กิโลกรัม|กิโล|กก\.?)/); if (qm) preset.note = `${qm[1]} ${qm[2]}`;
+  } else if (coll === 'worklogs') {
+    preset.workerId = workers[0].id;
+    if (days) preset.days = days;
+    const w = workers[0]; if (num(w.dailyWage)) preset.wage = num(w.dailyWage);
+    if (bahtAmt && days) preset.wage = r2(bahtAmt / days); else if (bahtAmt && !days) preset.wage = bahtAmt;
+    const task = WORK_TASKS.find(t => t.split(/[\/ ()]/).some(x => x.length > 2 && s.includes(x))); if (task) preset.task = task;
+  } else if (coll === 'payments') {
+    preset.workerId = workers[0].id;
+    preset.type = has(/เบิก/) ? 'advance' : 'pay';
+    if (bahtAmt) preset.amount = bahtAmt;
+    if (has(/โอน|พร้อมเพย์/)) preset.method = 'โอนเงิน/พร้อมเพย์';
+    if (!bahtAmt) notes.push('ไม่ได้ยินจำนวนเงิน');
+  } else if (coll === 'activities') {
+    const t = ACT_TYPES.find(a => a.split(/[\/ ()]/).some(x => x.length > 2 && s.includes(x.replace('เคมี', '')))) || (has(/ปุ๋ย/) ? ACT_TYPES[0] : '');
+    if (t) preset.type = t;
+    if (trees) preset.trees = trees;
+    if (workers.length) preset.workerIds = workers.map(w => w.id);
+    preset.detail = s.slice(0, 80);
+  } else if (coll === 'prices') {
+    if (product) preset.product = product; preset.price = price; preset.source = 'ร้านรับซื้อในพื้นที่';
+  }
+  preset.note = preset.note || (coll === 'activities' ? '' : '');
+  if (coll !== 'activities' && coll !== 'expenses') preset.note = `(พูด) ${raw}`.slice(0, 120);
+  return { coll, preset, notes, text: s };
+}
+
+/* ---------------- voice / quick text entry ---------------- */
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let voiceRec = null;
+ROUTES.voice = {
+  title: 'พูด/พิมพ์บันทึก',
+  render(main) {
+    const st = pstate('voice', () => ({ text: '' }));
+    const summary = r => {
+      if (!r.coll) return `<div class="alert">${ic('alert')}<div class="small">${esc(r.notes.join(' · '))}</div></div>`;
+      const P = r.preset; const rows = [];
+      const add = (l, v) => { if (v !== undefined && v !== '' && v !== null) rows.push(`<dt>${l}</dt><dd>${v}</dd>`); };
+      add('วันที่', P.date ? thDate(P.date) : 'วันนี้');
+      add('แปลง', P.plotId ? esc(plotName(P.plotId)) : undefined);
+      add('ชนิดยาง', P.product ? PRODUCTS[P.product] : undefined);
+      add('น้ำหนัก', P.weight ?? P.qty ? fmt(P.weight ?? P.qty) + ' กก.' : undefined);
+      add('ราคา', P.price ? fmt(P.price) + ' บ./กก.' : undefined);
+      add('%DRC', P.drc ? fmt(P.drc) + '%' : undefined);
+      add('ร้าน', esc(P.buyer || P.vendor || ''));
+      add('คนงาน', P.workerIds ? esc(names(P.workerIds)) : P.workerId ? esc(workerName(P.workerId)) : undefined);
+      add('จำนวนต้น', P.trees ? fmt(P.trees) : undefined);
+      add('จำนวนวัน', P.days ? fmt(P.days) : undefined);
+      add('จำนวนเงิน', P.amount ? baht(P.amount) : undefined);
+      add('หมวด/รายการ', esc([P.cat, P.item, P.type && coll_label(r.coll, P.type)].filter(Boolean).join(' · ')));
+      add('สภาพอากาศ', P.rain ? RAIN[P.rain] : undefined);
+      if (r.coll === 'sales' && num(P.weight) && num(P.price)) add('ยอดขายโดยประมาณ', baht(saleCalc({ split: 'owner', ...P }).gross));
+      return `<div class="card"><h3>${ic(SCHEMA[r.coll].icon)} ${esc(SCHEMA[r.coll].title)}</h3><dl class="kv">${rows.join('')}</dl>${r.notes.length ? `<div class="hint" style="color:var(--amber)">${esc(r.notes.join(' · '))} — กรอกเพิ่มในฟอร์มได้</div>` : ''}<button class="btn pri block" id="vOpen" style="margin-top:10px;min-height:48px">${ic('check')} เปิดฟอร์มเพื่อตรวจและบันทึก</button></div>`;
+    };
+    const coll_label = (c, t) => c === 'payments' ? PAYMENT_TYPES[t] : t;
+    main.innerHTML = `
+      <div class="card" style="text-align:center">
+        <button class="voice-btn" id="vMic" aria-label="กดแล้วพูด">${ic('mic')}</button>
+        <div class="small muted" id="vState" style="margin-top:8px">${SpeechRec ? 'กดปุ่มไมค์แล้วพูด (ภาษาไทย)' : 'เครื่องนี้ไม่รองรับการฟังเสียงในแอพ — ใช้ปุ่มไมค์บนแป้นพิมพ์ แล้วพูดลงในช่องด้านล่าง'}</div>
+      </div>
+      <div class="card"><textarea class="inp" id="vText" rows="3" placeholder="เช่น ขายขี้ยาง 152 กิโล ราคา 21.5 บาท ร้านเจ๊หนึ่ง">${esc(st.text)}</textarea>
+        <button class="btn block" id="vParse" style="margin-top:8px">${ic('search')} แปลงเป็นรายการ</button></div>
+      <div id="vOut"></div>
+      <div class="card small muted"><b>ตัวอย่างที่พูดได้</b><ul style="margin:6px 0 0;padding-left:18px;line-height:1.7">
+        <li>“กรีดแปลงหลังบ้าน 450 ต้น ได้ขี้ยาง 35 กิโล”</li>
+        <li>“วันนี้ฝนตก หยุดกรีดแปลงบ้านนา”</li>
+        <li>“ขายน้ำยาง 80 กิโล ดีอาร์ซี 33 ราคา 62 บาท”</li>
+        <li>“ซื้อปุ๋ย 30-5-18 สองกระสอบ 1,900 บาท”</li>
+        <li>“สมชายเบิกเงิน 500 บาท” · “ค่าแรงสมศรีตัดหญ้า 1 วัน”</li></ul>
+        <div class="hint">ทุกครั้งจะเปิดฟอร์มให้ตรวจก่อนบันทึก ไม่มีการบันทึกอัตโนมัติ</div></div>`;
+    const out = $('#vOut', main), ta = $('#vText', main), stEl = $('#vState', main), mic = $('#vMic', main);
+    const doParse = () => {
+      st.text = ta.value; if (!st.text.trim()) { out.innerHTML = ''; return; }
+      const r = parseVoice(st.text); out.innerHTML = summary(r);
+      const b = $('#vOpen', out); if (b) b.onclick = () => openForm(r.coll, null, r.preset, saved => { if (saved) { st.text = ''; } });
+    };
+    $('#vParse', main).onclick = doParse;
+    ta.addEventListener('input', debounce(doParse, 600));
+    if (st.text) doParse();
+    mic.onclick = () => {
+      if (!SpeechRec) { ta.focus(); return; }
+      if (voiceRec) { try { voiceRec.stop(); } catch (e) { } return; }
+      const rec = new SpeechRec(); voiceRec = rec;
+      rec.lang = 'th-TH'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+      const base = ta.value ? ta.value.trim() + ' ' : '';
+      mic.classList.add('on'); stEl.textContent = 'กำลังฟัง... พูดได้เลย';
+      rec.onresult = e => { let t = ''; for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; ta.value = base + t; if (e.results[e.results.length - 1].isFinal) doParse(); };
+      rec.onerror = e => { stEl.textContent = e.error === 'not-allowed' ? 'ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน' : e.error === 'network' ? 'ต้องต่ออินเทอร์เน็ตเพื่อแปลงเสียง' : 'ฟังไม่ชัด ลองอีกครั้ง'; };
+      rec.onend = () => { voiceRec = null; mic.classList.remove('on'); if (stEl.textContent.startsWith('กำลังฟัง')) stEl.textContent = 'กดปุ่มไมค์เพื่อพูดต่อ'; doParse(); };
+      try { rec.start(); } catch (e) { voiceRec = null; mic.classList.remove('on'); }
+    };
+  }
+};
+window.addEventListener('hashchange', () => { if (voiceRec) { try { voiceRec.abort(); } catch (e) { } voiceRec = null; } });
+
+/* app shortcuts: #new/<coll> */
+ROUTES.new = {
+  title: 'บันทึก',
+  render(main, coll) {
+    history.replaceState(null, '', location.pathname + location.search + '#home');
+    parseHash(); render();
+    if (SCHEMA[coll] && canEdit()) setTimeout(() => openForm(coll), 30);
+  }
+};
+
+/* ---------------- workers: PromptPay QR + payslip image ---------------- */
+{
+  const f = SCHEMA.workers.fields; const i = f.findIndex(x => x.k === 'bank');
+  f.splice(i + 1, 0, { k: 'promptpay', l: 'พร้อมเพย์ (เบอร์มือถือ / เลขบัตร 13 หลัก)', t: 'tel', ph: '08xxxxxxxx', hint: 'ใช้สร้าง QR สำหรับโอนจ่ายเงินจากแอพธนาคาร' });
+  const v0 = SCHEMA.workers.validate;
+  SCHEMA.workers.validate = d => (v0 && v0(d)) || (d.promptpay && !ppTarget(d.promptpay) ? 'หมายเลขพร้อมเพย์ต้องเป็นเบอร์มือถือ 10 หลัก หรือเลขบัตร 13 หลัก' : '');
+}
+const ppMask = id => { const d = String(id || '').replace(/\D/g, ''); return d.length === 10 ? `${d.slice(0, 3)}-xxx-${d.slice(6)}` : d.length === 13 ? `x-xxxx-xxxxx-${d.slice(10, 12)}-${d.slice(12)}` : d; };
+async function shareCanvas(cv, name, title) {
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  const file = new File([blob], name, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  downloadFile(name, blob); toast('บันทึกรูปแล้ว', 'ok');
+}
+function openPayQR(w, amount) {
+  const L = workerLedger(w.id);
+  let amt = amount ?? (L.balance > 0 ? L.balance : '');
+  const ov = openSheet({
+    title: 'QR พร้อมเพย์ — ' + w.name,
+    body: `<div class="field"><label class="fl">จำนวนเงิน</label><div class="inp-wrap"><input class="inp has-suf" id="qAmt" type="number" inputmode="decimal" step="any" value="${esc(amt)}"><span class="suf">บาท</span></div><div class="hint">ยอดค้างจ่ายตอนนี้ ${baht(L.balance)} · เว้นว่างเพื่อให้ใส่จำนวนเงินในแอพธนาคาร</div></div>
+      <div style="text-align:center;margin:12px 0" id="qBox"></div>
+      <div class="small" style="text-align:center">พร้อมเพย์ <b>${esc(ppMask(w.promptpay))}</b></div>
+      <div class="alert info" style="margin-top:10px">${ic('info')}<div class="small">กด “บันทึกรูป QR” แล้วเปิดแอพธนาคาร → สแกน → เลือกรูปจากอัลบั้ม <b>ตรวจชื่อผู้รับให้ถูกต้องก่อนยืนยันโอน</b> · แอพนี้ไม่ได้โอนเงินให้</div></div>`,
+    foot: `<button class="btn" data-a="img">${ic('image')} บันทึกรูป QR</button><button class="btn pri" data-a="paid">${ic('check')} บันทึกว่าจ่ายแล้ว</button>`
+  });
+  const draw = () => {
+    const box = $('#qBox', ov);
+    try {
+      const cv = QR.toCanvas(promptPayPayload(w.promptpay, amt), 7, 4);
+      cv.style.width = 'min(260px, 70vw)'; cv.style.height = 'auto'; cv.style.imageRendering = 'pixelated'; cv.id = 'qCanvas';
+      box.innerHTML = ''; box.appendChild(cv);
+      if (num(amt) > 0) box.insertAdjacentHTML('beforeend', `<div style="font-size:22px;font-weight:700" class="tnum">${baht(amt, 2)}</div>`);
+    } catch (e) { box.innerHTML = `<div class="alert red">${ic('alert')}<div class="small">${esc(e.message)}</div></div>`; }
+  };
+  draw();
+  $('#qAmt', ov).addEventListener('input', e => { amt = e.target.value; draw(); });
+  $('[data-a=img]', ov).onclick = () => {
+    const src = $('#qCanvas', ov); if (!src) return;
+    const pad = 40, W = src.width + pad * 2, H = src.height + 170;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d');
+    c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.fillStyle = '#0b4f6c'; c.fillRect(0, 0, W, 64);
+    c.fillStyle = '#fff'; c.font = 'bold 28px sans-serif'; c.textAlign = 'center'; c.fillText('PromptPay พร้อมเพย์', W / 2, 42);
+    c.drawImage(src, pad, 76);
+    c.fillStyle = '#111'; c.font = 'bold 26px sans-serif'; c.fillText(w.name, W / 2, src.height + 112);
+    c.font = '22px sans-serif'; c.fillText(num(amt) > 0 ? baht(amt, 2) + ' บาท' : 'ไม่ระบุจำนวนเงิน', W / 2, src.height + 146);
+    shareCanvas(cv, `promptpay-${w.name}.png`, 'QR พร้อมเพย์');
+  };
+  $('[data-a=paid]', ov).onclick = () => { closeSheet(ov, true); openForm('payments', null, { workerId: w.id, type: 'pay', method: 'โอนเงิน/พร้อมเพย์', amount: num(amt) || '' }); };
+}
+function wrapText(c, text, maxW) {
+  const out = []; let line = '';
+  const parts = (typeof Intl !== 'undefined' && Intl.Segmenter) ? [...new Intl.Segmenter('th', { granularity: 'word' }).segment(String(text))].map(x => x.segment) : Array.from(String(text));
+  for (const ch of parts) { const t = line + ch; if (c.measureText(t).width > maxW && line) { out.push(line); line = ch; } else line = t; }
+  if (line) out.push(line); return out;
+}
+function payslipCanvas(w) {
+  const L = workerLedger(w.id);
+  const lastPay = [...L.rows].reverse().find(r => r.kind === 'pay');
+  let rows = L.rows.slice(lastPay ? L.rows.lastIndexOf(lastPay) + 1 : 0);
+  if (!rows.length) rows = L.rows.slice(-10);
+  const W = 760, P = 36, font = '"Sarabun","Noto Sans Thai","Leelawadee UI","Thonburi",sans-serif';
+  const shown = rows.slice(-30); const hidden = rows.length - shown.length;
+  const measure = document.createElement('canvas').getContext('2d'); measure.font = `22px ${font}`;
+  const lineH = 34; let bodyH = 0; const prepared = shown.map(x => { const lines = wrapText(measure, x.label + (x.sub ? ' · ' + x.sub : ''), W - P * 2 - 290); bodyH += Math.max(1, lines.length) * lineH + 10; return { x, lines }; });
+  const H = 250 + bodyH + (hidden ? 40 : 0) + 230;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d');
+  c.fillStyle = '#fff'; c.fillRect(0, 0, W, H);
+  c.fillStyle = '#047857'; c.fillRect(0, 0, W, 120);
+  c.fillStyle = '#fff'; c.font = `bold 34px ${font}`; c.fillText('สลิปรายได้ / ยอดค้างจ่าย', P, 56);
+  const farm = (curFarm !== 'all' && farmName(curFarm)) || list('farms')[0]?.name || 'สวนยางพารา';
+  c.font = `22px ${font}`; c.fillText(`${farm} · ออก ณ ${thDate(today(), true)}`, P, 96);
+  c.fillStyle = '#111'; c.font = `bold 30px ${font}`; c.fillText(w.name, P, 168);
+  c.fillStyle = '#555'; c.font = `22px ${font}`;
+  c.fillText(lastPay ? `รายการตั้งแต่จ่ายครั้งล่าสุด (${thDate(lastPay.date, true)})` : 'รายการล่าสุด', P, 204);
+  c.fillStyle = '#e5e7eb'; c.fillRect(P, 222, W - P * 2, 2);
+  let y = 256;
+  if (hidden) { c.fillStyle = '#888'; c.fillText(`… และรายการก่อนหน้าอีก ${hidden} รายการ`, P, y); y += 40; }
+  prepared.forEach(({ x, lines }) => {
+    c.fillStyle = '#555'; c.font = `22px ${font}`; c.fillText(thDate(x.date), P, y);
+    c.fillStyle = '#111'; lines.forEach((ln, i) => c.fillText(ln, P + 130, y + i * lineH));
+    c.textAlign = 'right'; c.fillStyle = x.amt < 0 ? '#b91c1c' : '#047857'; c.font = `bold 22px ${font}`; c.fillText((x.amt > 0 ? '+' : '') + fmt(x.amt, 2), W - P, y); c.textAlign = 'left';
+    y += Math.max(1, lines.length) * lineH + 10;
+  });
+  c.fillStyle = '#e5e7eb'; c.fillRect(P, y, W - P * 2, 2); y += 44;
+  const earned = sum(rows.filter(x => x.amt > 0), 'amt'), minus = -sum(rows.filter(x => x.amt < 0), 'amt');
+  const kv = (l, v, bold, color) => { c.font = `${bold ? 'bold ' : ''}24px ${font}`; c.fillStyle = '#333'; c.fillText(l, P, y); c.textAlign = 'right'; c.fillStyle = color || '#111'; c.fillText(v, W - P, y); c.textAlign = 'left'; y += 42; };
+  kv('รายได้ในช่วงนี้', baht(earned, 2));
+  kv('หักเบิก/จ่ายแล้ว', minus ? '-' + baht(minus, 2) : '฿0');
+  c.fillStyle = '#ecfdf5'; c.fillRect(P - 12, y - 32, W - P * 2 + 24, 58); y += 4;
+  kv(L.balance >= 0 ? 'ยอดค้างจ่ายคงเหลือ' : 'เบิกเกินยอด', baht(Math.abs(L.balance), 2), true, L.balance >= 0 ? '#047857' : '#b91c1c');
+  c.fillStyle = '#999'; c.font = `18px ${font}`; c.fillText('สร้างจากแอพสวนยางพารา · ตรวจสอบรายการได้ที่เจ้าของสวน', P, H - 24);
+  return cv;
+}
+{
+  const orig = ROUTES.worker.render;
+  ROUTES.worker.render = function (main, id) {
+    orig(main, id);
+    const w = DB.workers.get(id); const cs = $('#copySum', main); if (!w || !cs) return;
+    cs.insertAdjacentHTML('afterend', `<button class="btn sm" id="slipImg">${ic('image')} สลิปเป็นรูป</button>${w.promptpay ? `<button class="btn sm" id="ppQR">${ic('qr')} QR พร้อมเพย์</button>` : `<button class="btn sm" data-open="workers:${id}" title="เพิ่มเบอร์พร้อมเพย์">${ic('qr')} ตั้งพร้อมเพย์</button>`}`);
+    $('#slipImg', main).onclick = () => shareCanvas(payslipCanvas(w), `slip-${w.name}-${today()}.png`, 'สลิป ' + w.name);
+    const q = $('#ppQR', main); if (q) q.onclick = () => openPayQR(w);
+  };
+}
+
+/* ---------------- tax summary ---------------- */
+ROUTES.tax = {
+  title: 'สรุปรายได้สำหรับยื่นภาษี',
+  render(main) {
+    const cy = +today().slice(0, 4);
+    const st = pstate('tax', () => ({ y: +today().slice(5, 7) <= 3 ? cy - 1 : cy, half: false, basis: 'all', other: false }));
+    const draw = () => {
+      const from = `${st.y}-01-01`, to = st.half ? `${st.y}-06-30` : `${st.y}-12-31`;
+      const P = pnl(from, to);
+      const saleIncome = st.basis === 'all' ? P.net : P.ownerNet;
+      const otherIncome = st.other ? P.other : 0;
+      const income = r2(saleIncome + otherIncome);
+      const actual = r2((st.basis === 'all' ? P.tapper : 0) + P.wages + P.adjust + P.expenses);
+      const flat = r2(income * 0.6);
+      const best = actual > flat ? 'actual' : 'flat';
+      const months = Array.from({ length: st.half ? 6 : 12 }, (_, i) => `${st.y}-${String(i + 1).padStart(2, '0')}`);
+      const mp = months.map(m => pnl(m + '-01', lastDay(m)));
+      main.innerHTML = `
+      <div class="card"><div class="fields">
+        <div class="field half"><label class="fl">ปีภาษี</label><select class="inp" id="tY">${[cy, cy - 1, cy - 2, cy - 3].map(y => `<option value="${y}"${y === st.y ? ' selected' : ''}>พ.ศ. ${y + 543}</option>`).join('')}</select></div>
+        <div class="field half"><label class="fl">ช่วงเวลา</label><select class="inp" id="tH"><option value="0"${!st.half ? ' selected' : ''}>ทั้งปี (ภ.ง.ด.90)</option><option value="1"${st.half ? ' selected' : ''}>ม.ค.–มิ.ย. (ภ.ง.ด.94)</option></select></div>
+        <div class="field"><label class="fl">การนับรายได้จากการขายยาง</label><div class="seg"><label><input type="radio" name="tB" value="all"${st.basis === 'all' ? ' checked' : ''}>ยอดขายทั้งหมด (เจ้าของขายแล้วแบ่งเงิน)</label><label><input type="radio" name="tB" value="owner"${st.basis === 'owner' ? ' checked' : ''}>เฉพาะส่วนของเจ้าของ</label></div></div>
+        <div class="field"><label class="switch"><input type="checkbox" id="tO"${st.other ? ' checked' : ''}> รวมรายรับอื่นๆ (เช่น เงินช่วยเหลือ) ${baht(P.other)}</label></div>
+      </div></div>
+      <div class="card"><h3>${ic('book')} ${st.half ? 'ครึ่งปีแรก' : 'ทั้งปี'} พ.ศ. ${st.y + 543}</h3>
+        <dl class="kv">
+          <dt>ยอดขายยาง (ก่อนหักร้าน)</dt><dd>${baht(P.gross, 2)}</dd>
+          <dt>ร้านหัก/ค่าขนส่ง</dt><dd class="neg">-${baht(P.deduct, 2)}</dd>
+          <dt>ขายได้สุทธิ</dt><dd>${baht(P.net, 2)}</dd>
+          <dt>ส่วนแบ่งคนกรีด</dt><dd>${baht(P.tapper, 2)}</dd>
+          <dt>ส่วนของเจ้าของ</dt><dd>${baht(P.ownerNet, 2)}</dd>
+        </dl><hr class="sep">
+        <div class="row"><span><b>เงินได้พึงประเมิน (ประมาณ)</b></span><span class="sp"></span><span class="big">${baht(income, 2)}</span></div>
+        <div class="tbl-wrap" style="margin-top:10px"><table class="tbl">
+          <tr><th>วิธีหักค่าใช้จ่าย</th><th class="n">ค่าใช้จ่าย</th><th class="n">เงินได้หลังหัก</th></tr>
+          <tr class="${best === 'flat' ? 'tot' : ''}"><td>หักเหมา 60%</td><td class="n">${baht(flat)}</td><td class="n">${baht(income - flat)}</td></tr>
+          <tr class="${best === 'actual' ? 'tot' : ''}"><td>หักตามจริง</td><td class="n">${baht(actual)}</td><td class="n">${baht(income - actual)}</td></tr>
+        </table></div>
+        <div class="hint">หักตามจริง = ${st.basis === 'all' ? 'ส่วนแบ่งคนกรีด ' + bahtS(P.tapper) + ' + ' : ''}ค่าแรง ${bahtS(P.wages + P.adjust)} + รายจ่ายสวน ${bahtS(P.expenses)} · ต้องมีหลักฐานค่าใช้จ่ายครบถ้วน · <b>${best === 'flat' ? 'หักเหมาได้มากกว่า' : 'หักตามจริงได้มากกว่า'}</b></div>
+      </div>
+      <div class="card"><h3>${ic('chart')} รายเดือน</h3><div class="tbl-wrap"><table class="tbl"><tr><th>เดือน</th><th class="n">ขายยาง กก.</th><th class="n">เงินได้</th><th class="n">ค่าใช้จ่ายจริง</th></tr>
+        ${months.map((m, i) => { const x = mp[i]; const inc = (st.basis === 'all' ? x.net : x.ownerNet) + (st.other ? x.other : 0); const ex = (st.basis === 'all' ? x.tapper : 0) + x.wages + x.adjust + x.expenses; return `<tr><td>${thYMs(m)}</td><td class="n">${fmt(x.kg, 0)}</td><td class="n">${bahtS(inc)}</td><td class="n">${bahtS(ex)}</td></tr>`; }).join('')}
+      </table></div><button class="btn block" id="tCsv" style="margin-top:10px">${ic('download')} ดาวน์โหลดรายการขายและรายจ่าย (CSV)</button></div>
+      <div class="alert info">${ic('info')}<div class="small">
+        • รายได้จากสวนยาง/การทำยางแผ่นหรือยางที่ไม่ใช่ยางสำเร็จรูป เป็นเงินได้ตามมาตรา 40(8) หักค่าใช้จ่ายแบบเหมาได้ร้อยละ 60 (พ.ร.ฎ. ฉบับที่ 11 พ.ศ. 2502 มาตรา 8 (14) และ (28)) หรือเลือกหักตามจริง<br>
+        • เงินได้ ม.ค.–มิ.ย. ยื่น ภ.ง.ด.94 · ทั้งปียื่น ภ.ง.ด.90 ภายใน 31 มี.ค. ของปีถัดไป<br>
+        • ตัวเลขนี้ยังไม่หักค่าลดหย่อน และไม่ใช่การคำนวณภาษี — กรณีแบ่งยางกับคนกรีด เงินได้ของใครให้ยึดตามข้อตกลงจริง ควรสอบถามสรรพากรพื้นที่หรือผู้ทำบัญชีก่อนยื่น</div></div>`;
+      $('#tY', main).onchange = e => { st.y = +e.target.value; draw(); };
+      $('#tH', main).onchange = e => { st.half = e.target.value === '1'; draw(); };
+      $$('[name=tB]', main).forEach(r => r.onchange = () => { st.basis = r.value; draw(); });
+      $('#tO', main).onchange = e => { st.other = e.target.checked; draw(); };
+      $('#tCsv', main).onclick = () => {
+        const rows = [['วันที่', 'ประเภท', 'รายละเอียด', 'น้ำหนัก กก.', 'ราคา', 'ยอดขาย/จำนวนเงิน', 'ร้านหัก', 'สุทธิ', 'ส่วนแบ่งคนกรีด', 'ส่วนเจ้าของ']];
+        list('sales', r => r.date >= from && r.date <= to && inFarm(r)).sort((a, b) => a.date.localeCompare(b.date)).forEach(r => { const c = saleCalc(r); rows.push([r.date, 'ขายยาง', `${PRODUCTS[r.product] || ''} ${r.buyer || ''}`, r.weight, r.price, c.gross, num(r.deduct), c.net, c.tapperTotal, c.ownerNet]); });
+        list('worklogs', r => r.date >= from && r.date <= to && inFarm(r)).sort((a, b) => a.date.localeCompare(b.date)).forEach(r => rows.push([r.date, 'ค่าแรง', `${workerName(r.workerId)} ${r.task || ''}`, '', '', wageAmt(r), '', '', '', '']));
+        list('expenses', r => r.date >= from && r.date <= to && inFarm(r)).sort((a, b) => a.date.localeCompare(b.date)).forEach(r => rows.push([r.date, 'รายจ่าย: ' + (r.cat || ''), `${r.item || ''} ${r.vendor || ''}`, '', '', num(r.amount), '', '', '', '']));
+        list('incomes', r => r.date >= from && r.date <= to && inFarm(r)).forEach(r => rows.push([r.date, 'รายรับอื่น: ' + (r.cat || ''), r.note || '', '', '', num(r.amount), '', '', '', '']));
+        downloadFile(`รายได้สวนยาง-${st.y + 543}${st.half ? '-ครึ่งปี' : ''}.csv`, '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n'), 'text/csv');
+      };
+    };
+    draw();
+  }
+};
+
+/* ---------------- tapping schedule & leaf-fall rest ---------------- */
+const REST_DEFAULT = [2, 3, 4];
+const restMonths = () => { const v = S().restMonths; return Array.isArray(v) ? v : REST_DEFAULT; };
+function tapSysCode(p) { const s = String(p.tapSystem || ''); if (/2d3/.test(s)) return '2d3'; const m = s.match(/\bd([1-4])\b/); return m ? 'd' + m[1] : ''; }
+function tapDue(p, date = today()) {
+  if (p.status === 'young' || p.status === 'replant') return { due: false, off: true, why: PLOT_STATUS[p.status] };
+  if (p.status === 'rest') return { due: false, off: true, why: 'พักกรีด' };
+  const inRest = restMonths().includes(+date.slice(5, 7));
+  const dates = new Set(list('tapping', r => r.plotId === p.id && r.rain !== 'skip' && r.date < date).map(r => r.date));
+  const last = [...dates].sort().pop() || '';
+  const code = tapSysCode(p);
+  let due = true, why = '';
+  if (code === '2d3') { if (dates.has(addDays(date, -1)) && dates.has(addDays(date, -2))) { due = false; why = 'กรีดติดกัน 2 วันแล้ว วันนี้พัก (2d3)'; } else why = 'ถึงรอบกรีด (2d3)'; }
+  else if (code && code !== 'd1') { const n = +code.slice(1); if (last && diffDays(last, date) < n) { due = false; why = `กรีดล่าสุด${last === addDays(date, -1) ? 'เมื่อวาน' : ' ' + thDate(last)} · ระบบ ${code} กรีดได้อีก ${thDate(addDays(last, n))}`; } else why = `ถึงรอบกรีด (${code})`; }
+  else if (code === 'd1') why = 'กรีดทุกวัน';
+  else why = last ? `กรีดล่าสุด ${thDate(last)}` : 'ยังไม่มีบันทึกกรีด';
+  if (inRest && due) why = 'ช่วงพักผลัดใบ ควรงดกรีด';
+  return { due: due && !inRest, inRest, why, last, code, noSystem: !code };
+}
+function tapScheduleCard(date = today()) {
+  const plots = list('plots', p => inFarm(p) && p.status === 'tapping');
+  if (!plots.length) return '';
+  const done = new Set(list('tapping', r => r.date === date).map(r => r.plotId));
+  const rows = plots.map(p => ({ p, s: tapDue(p, date) })).sort((a, b) => (b.s.due - a.s.due) || a.p.name.localeCompare(b.p.name, 'th'));
+  const nDue = rows.filter(x => x.s.due && !done.has(x.p.id)).length;
+  const rest = rows[0]?.s.inRest;
+  return `<div class="card"><h3>${ic('drop')} รอบกรีด${relDay(date)}<span class="sp"></span><button class="link" data-go="tapday">บันทึก</button></h3>
+    ${rest ? `<div class="alert" style="margin-bottom:8px">${ic('leaf')}<div class="small">เดือนนี้อยู่ในช่วงพักต้นช่วงผลัดใบ (ตั้งค่าได้ที่ ตั้งค่า → รอบกรีด)</div></div>` : ''}
+    ${rows.map(({ p, s }) => `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span>${done.has(p.id) ? '✅' : s.due ? '🟢' : '⏸️'} <b>${esc(p.name)}</b></span><span class="sp"></span><span class="xs ${done.has(p.id) ? 'faint' : s.due ? 'pos' : 'muted'}" style="text-align:right">${done.has(p.id) ? 'บันทึกแล้ว' : esc(s.why)}</span></div>`).join('')}
+    ${nDue ? `<button class="btn pri block" data-go="tapday" style="margin-top:10px">${ic('drop')} บันทึกกรีด ${nDue} แปลงที่ถึงรอบ</button>` : ''}
+    ${rows.some(x => x.s.noSystem) ? `<div class="hint">ระบุ “ระบบกรีด” ในข้อมูลแปลงเพื่อให้คำนวณรอบกรีดได้</div>` : ''}</div>`;
+}
+
+/* ---------------- price alerts ---------------- */
+const priceTargets = () => S().priceTargets || {};
+function priceSignals() {
+  const out = []; const t = today(); const tg = priceTargets();
+  Object.keys(PRODUCTS).forEach(p => {
+    const rows = list('prices', r => r.product === p).sort((a, b) => a.date.localeCompare(b.date));
+    const cur = rows[rows.length - 1]; if (!cur || diffDays(cur.date, t) > 7) return;
+    const prev30 = rows.filter(r => r.date >= addDays(cur.date, -30) && r.date < cur.date);
+    const avg = prev30.length ? sum(prev30, 'price') / prev30.length : 0;
+    if (num(tg[p]) && num(cur.price) >= num(tg[p])) out.push({ p, cls: '', text: `${PRODUCTS[p]} ${fmt(cur.price, 2)} บ. ถึงราคาเป้าหมาย ${fmt(tg[p], 2)} บ. แล้ว`, sub: `${thDate(cur.date)} · ${cur.source || ''}` });
+    else if (avg && num(cur.price) >= avg * 1.05) out.push({ p, cls: 'blue', text: `${PRODUCTS[p]} ${fmt(cur.price, 2)} บ. สูงกว่าเฉลี่ย 30 วัน ${fmt((num(cur.price) / avg - 1) * 100, 0)}%`, sub: `เฉลี่ย ${fmt(avg, 2)} บ. · ${thDate(cur.date)}` });
+    else if (avg && num(cur.price) <= avg * 0.93) out.push({ p, cls: 'amber', text: `${PRODUCTS[p]} ${fmt(cur.price, 2)} บ. ต่ำกว่าเฉลี่ย 30 วัน ${fmt((1 - num(cur.price) / avg) * 100, 0)}%`, sub: 'ถ้าเก็บยางได้ อาจรอราคา' });
+  });
+  return out;
+}
+{
+  const orig = ROUTES.prices.render;
+  ROUTES.prices.render = function (main) {
+    orig(main);
+    const tg = priceTargets();
+    main.insertAdjacentHTML('beforeend', `<div class="card"><h3>${ic('bell')} แจ้งเตือนเมื่อราคาถึงเป้าหมาย</h3><div class="fields">${Object.entries(PRODUCTS).map(([k, l]) => `<div class="field half"><label class="fl">${l}</label><div class="inp-wrap"><input class="inp has-suf" type="number" inputmode="decimal" step="any" data-tg="${k}" value="${esc(tg[k] ?? '')}" placeholder="ไม่ตั้ง"><span class="suf">บ./กก.</span></div></div>`).join('')}</div><div class="hint">แจ้งที่หน้าหลักเมื่อราคาที่บันทึกล่าสุด (ภายใน 7 วัน) ถึงเป้าหมาย หรือสูง/ต่ำกว่าค่าเฉลี่ย 30 วันชัดเจน</div><button class="btn block" id="tgSave" style="margin-top:8px">${ic('check')} บันทึกเป้าหมาย</button></div>`);
+    $('#tgSave', main).onclick = async () => { const o = {}; $$('[data-tg]', main).forEach(i => { if (i.value !== '') o[i.dataset.tg] = num(i.value); }); await setS({ priceTargets: o }); toast('บันทึกเป้าหมายราคาแล้ว', 'ok'); };
+  };
+}
+
+/* ---------------- home additions ---------------- */
+{
+  const orig = ROUTES.home.render;
+  ROUTES.home.render = function (main) {
+    orig(main);
+    if (S().simple) return;
+    const hero = $('.card.hero', main);
+    if (hero && canEdit()) hero.insertAdjacentHTML('beforeend', `<button class="btn sm" data-go="voice" style="margin-top:10px;background:rgba(255,255,255,.16);color:#fff;border-color:transparent">${ic('mic')} พูด/พิมพ์บันทึก</button>`);
+    const quick = $('.quick', main);
+    const sig = priceSignals();
+    const html = tapScheduleCard() + (sig.length ? `<div class="list">${sig.map(s => itemRow({ go: 'prices', icon: 'trend', cls: s.cls, t: esc(s.text), d: esc(s.sub) })).join('')}</div>` : '');
+    if (quick) quick.insertAdjacentHTML('afterend', html);
+  };
+}
+
+/* ---------------- plot boundary by GPS ---------------- */
+const polyOf = p => { const a = safeJSON(p?.poly, []); return Array.isArray(a) ? a.filter(x => Array.isArray(x) && x.length >= 2 && isFinite(x[0]) && isFinite(x[1])) : []; };
+function polyMetrics(pts) {
+  if (pts.length < 2) return { m2: 0, perim: 0 };
+  const lat0 = pts.reduce((s, p) => s + p[0], 0) / pts.length, lon0 = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+  const kx = 111320 * Math.cos(lat0 * Math.PI / 180), ky = 110574;
+  const xy = pts.map(([la, lo]) => [(lo - lon0) * kx, (la - lat0) * ky]);
+  let a = 0, per = 0;
+  xy.forEach((p, i) => { const q = xy[(i + 1) % xy.length]; a += p[0] * q[1] - q[0] * p[1]; if (i < xy.length - 1 || xy.length > 2) per += Math.hypot(q[0] - p[0], q[1] - p[1]); });
+  return { m2: pts.length >= 3 ? Math.abs(a) / 2 : 0, perim: per, center: [lat0, lon0], xy };
+}
+const m2ToRai = m2 => { const rai = Math.floor(m2 / 1600); const ngan = Math.floor((m2 - rai * 1600) / 400); const wa = r2((m2 - rai * 1600 - ngan * 400) / 4); return { rai, ngan, wa }; };
+const raiText = m2 => { const x = m2ToRai(m2); return `${x.rai} ไร่ ${x.ngan} งาน ${fmt(x.wa, 1)} ตร.วา`; };
+const gpsDist = (a, b) => polyMetrics([a, b]).perim;
+function polySvg(pts, size = 280, live) {
+  if (!pts.length) return `<div class="empty" style="height:${size * 0.6}px">${ic('map')}<div>ยังไม่มีจุด</div></div>`;
+  const { xy } = polyMetrics(pts.length === 1 ? [pts[0], pts[0]] : pts);
+  const xs = xy.map(p => p[0]), ys = xy.map(p => p[1]);
+  const w = Math.max(...xs) - Math.min(...xs) || 1, h = Math.max(...ys) - Math.min(...ys) || 1;
+  const sc = (size - 30) / Math.max(w, h); const ox = Math.min(...xs), oy = Math.max(...ys);
+  const P = xy.map(([x, y]) => [15 + (x - ox) * sc, 15 + (oy - y) * sc]);
+  const H = 30 + h * sc;
+  return `<svg viewBox="0 0 ${size} ${H}" style="width:100%;max-width:${size}px;display:block;margin:0 auto;background:var(--pri-soft);border-radius:12px">
+    ${P.length >= 3 ? `<polygon points="${P.map(p => p.join(',')).join(' ')}" fill="rgba(4,120,87,.25)" stroke="var(--pri)" stroke-width="2"/>` : `<polyline points="${P.map(p => p.join(',')).join(' ')}" fill="none" stroke="var(--pri)" stroke-width="2"/>`}
+    ${P.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="${i === P.length - 1 && live ? 6 : 4}" fill="${i === P.length - 1 && live ? 'var(--red)' : 'var(--pri)'}"/>`).join('')}
+    <text x="${size - 8}" y="16" text-anchor="end" font-size="11" fill="var(--muted)">▲ เหนือ · ${fmt(Math.max(w, h), 0)} ม.</text></svg>`;
+}
+function kmlFor(plots) {
+  const x = s => esc(s);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>สวนยางพารา</name><Style id="p"><LineStyle><color>ff578704</color><width>3</width></LineStyle><PolyStyle><color>55578704</color></PolyStyle></Style>\n${plots.map(p => { const pts = polyOf(p); if (pts.length < 3) return ''; const ring = [...pts, pts[0]].map(([la, lo]) => `${lo},${la},0`).join(' '); return `<Placemark><name>${x(p.name)}</name><description>${x(farmName(p.farmId))} · ${x(raiText(polyMetrics(pts).m2))}</description><styleUrl>#p</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>${ring}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>`; }).join('\n')}\n</Document></kml>`;
+}
+let gpsWatch = null;
+const stopGps = () => { if (gpsWatch !== null) { try { navigator.geolocation.clearWatch(gpsWatch); } catch (e) { } gpsWatch = null; } };
+window.addEventListener('hashchange', stopGps);
+ROUTES.plotmap = {
+  title: id => id ? 'ขอบเขตแปลง: ' + (get('plots', id)?.name || '') : 'วัดพื้นที่แปลงด้วย GPS',
+  render(main, id) {
+    const p = id && get('plots', id);
+    if (!p) {
+      const plots = list('plots', inFarm).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+      const withPoly = plots.filter(x => polyOf(x).length >= 3);
+      main.innerHTML = `<div class="alert info">${ic('info')}<div class="small">เลือกแปลง แล้วเดินรอบขอบแปลงพร้อมโทรศัพท์ ปักจุดที่มุมแปลงแต่ละมุม แอพจะคำนวณพื้นที่เป็นไร่-งาน-ตร.วา ให้ (ความแม่นยำขึ้นกับ GPS ของเครื่อง ปกติคลาดเคลื่อน 3–10 เมตร)</div></div>
+        <div class="list">${plots.map(x => { const pts = polyOf(x); const m = polyMetrics(pts); return itemRow({ go: 'plotmap/' + x.id, icon: 'map', cls: pts.length >= 3 ? '' : 'blue', t: esc(x.name), d: pts.length >= 3 ? `วัดได้ ${raiText(m.m2)} · ${pts.length} จุด` : 'ยังไม่ได้วัดขอบเขต', d2: `ข้อมูลแปลง ${areaText(x)}`, r: pts.length >= 3 ? fmt(m.m2 / 1600, 2) + ' ไร่' : '' }); }).join('') || emptyBox('ยังไม่มีแปลง')}</div>
+        ${withPoly.length ? `<button class="btn block" id="kmlAll">${ic('download')} ดาวน์โหลดแผนที่ทุกแปลง (KML สำหรับ Google Earth/My Maps)</button>` : ''}`;
+      const k = $('#kmlAll', main); if (k) k.onclick = () => downloadFile('แปลงยาง.kml', kmlFor(withPoly), 'application/vnd.google-earth.kml+xml');
+      return;
+    }
+    const st = pstate('plotmap:' + id, () => ({ pts: polyOf(p).map(x => x.slice(0, 2)), acc: null, walking: false, updArea: true, msg: '' }));
+    const draw = () => {
+      const m = polyMetrics(st.pts); const rec = plotArea(p) * 1600;
+      main.innerHTML = `
+        <div class="card">${polySvg(st.pts, 300, st.walking)}
+          <div class="grid3" style="margin-top:10px">${kpi('จุด', st.pts.length)}${kpi('เส้นรอบแปลง', fmt(m.perim, 0) + ' ม.')}${kpi('ความแม่นยำ GPS', st.acc ? '±' + fmt(st.acc, 0) + ' ม.' : '-')}</div>
+          <div style="text-align:center;margin-top:8px"><div class="small muted">พื้นที่ที่วัดได้</div><div style="font-size:22px;font-weight:700">${st.pts.length >= 3 ? raiText(m.m2) : '-'}</div>${st.pts.length >= 3 ? `<div class="xs faint">${fmt(m.m2, 0)} ตร.ม. = ${fmt(m.m2 / 1600, 2)} ไร่${rec ? ` · ข้อมูลแปลงเดิม ${fmt(rec / 1600, 2)} ไร่ (${m.m2 > rec ? '+' : ''}${fmt((m.m2 - rec) / rec * 100, 0)}%)` : ''}</div>` : ''}</div>
+          ${st.msg ? `<div class="hint" style="text-align:center">${esc(st.msg)}</div>` : ''}
+        </div>
+        <div class="row wrap" style="margin-bottom:10px">
+          <button class="btn pri" id="gAdd" style="flex:1;min-height:50px">${ic('pin')} ปักจุดตรงนี้</button>
+          <button class="btn ${st.walking ? 'danger' : ''}" id="gWalk" style="flex:1;min-height:50px">${st.walking ? '⏹️ หยุดเดิน' : '🚶 เดินรอบอัตโนมัติ'}</button>
+        </div>
+        <div class="row wrap" style="margin-bottom:12px"><button class="btn sm" id="gUndo" ${st.pts.length ? '' : 'disabled'}>↩️ ลบจุดล่าสุด</button><button class="btn sm danger" id="gClear" ${st.pts.length ? '' : 'disabled'}>ล้างทั้งหมด</button>${m.center ? `<a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${m.center[0].toFixed(6)},${m.center[1].toFixed(6)}">${ic('map')} Google Maps</a>` : ''}${st.pts.length >= 3 ? `<button class="btn sm" id="gKml">${ic('download')} KML</button>` : ''}</div>
+        <div class="card"><label class="switch"><input type="checkbox" id="gUpd"${st.updArea ? ' checked' : ''}> อัปเดตพื้นที่ (ไร่/งาน/ตร.วา) และพิกัดของแปลงตามที่วัด</label>
+          <button class="btn pri block" id="gSave" style="margin-top:10px;min-height:48px" ${st.pts.length >= 3 && canEdit() ? '' : 'disabled'}>${ic('check')} บันทึกขอบเขตแปลง</button></div>
+        <div class="card small muted">${ic('info')} <b>วิธีวัด:</b> ยืนที่มุมแปลงแล้วกด “ปักจุดตรงนี้” เดินไปมุมถัดไปตามลำดับรอบแปลงแล้วปักจุดอีก จนครบทุกมุม (ไม่ต้องกลับไปจุดแรก) · หรือกด “เดินรอบอัตโนมัติ” แล้วเดินตามแนวขอบแปลง แอพจะเก็บจุดทุก ~8 เมตร · เปิดหน้าจอค้างไว้ระหว่างเดิน · ใต้ร่มไม้หนาแน่น GPS อาจคลาดเคลื่อนมาก</div>`;
+      $('#gAdd', main).onclick = () => {
+        if (!navigator.geolocation) return toast('อุปกรณ์ไม่รองรับ GPS', 'warn');
+        const b = $('#gAdd', main); b.disabled = true; b.textContent = 'กำลังหาตำแหน่ง...';
+        navigator.geolocation.getCurrentPosition(pos => {
+          st.acc = pos.coords.accuracy; const pt = [+pos.coords.latitude.toFixed(7), +pos.coords.longitude.toFixed(7)];
+          const lastPt = st.pts[st.pts.length - 1];
+          if (lastPt && gpsDist(lastPt, pt) < 2) st.msg = 'จุดนี้ใกล้จุดเดิมมาก (น้อยกว่า 2 ม.) ไม่ได้เพิ่ม';
+          else { st.pts.push(pt); st.msg = pos.coords.accuracy > 20 ? `เพิ่มจุดแล้ว แต่ GPS คลาดเคลื่อน ±${fmt(pos.coords.accuracy, 0)} ม. ลองรอสักครู่แล้วปักใหม่` : 'เพิ่มจุดแล้ว'; }
+          draw();
+        }, () => { toast('หาตำแหน่งไม่ได้ กรุณาอนุญาตการเข้าถึงตำแหน่ง', 'warn'); draw(); }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+      };
+      $('#gWalk', main).onclick = () => {
+        if (st.walking) { stopGps(); st.walking = false; st.msg = 'หยุดเก็บจุดแล้ว'; draw(); return; }
+        if (!navigator.geolocation) return toast('อุปกรณ์ไม่รองรับ GPS', 'warn');
+        st.walking = true; st.msg = 'กำลังรอสัญญาณ GPS...'; draw();
+        gpsWatch = navigator.geolocation.watchPosition(pos => {
+          st.acc = pos.coords.accuracy;
+          if (pos.coords.accuracy > 25) { st.msg = `สัญญาณ GPS ยังไม่แม่น (±${fmt(pos.coords.accuracy, 0)} ม.)`; draw(); return; }
+          const pt = [+pos.coords.latitude.toFixed(7), +pos.coords.longitude.toFixed(7)]; const lastPt = st.pts[st.pts.length - 1];
+          if (!lastPt || gpsDist(lastPt, pt) >= 8) { st.pts.push(pt); st.msg = 'เก็บจุดอัตโนมัติ...'; }
+          draw();
+        }, () => { stopGps(); st.walking = false; toast('หาตำแหน่งไม่ได้', 'warn'); draw(); }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+      };
+      $('#gUndo', main).onclick = () => { st.pts.pop(); st.msg = ''; draw(); };
+      $('#gClear', main).onclick = async () => { if (await confirmBox('ล้างจุดทั้งหมดของแปลงนี้?', 'ล้าง')) { st.pts = []; st.msg = ''; draw(); } };
+      $('#gUpd', main).onchange = e => st.updArea = e.target.checked;
+      const kb = $('#gKml', main); if (kb) kb.onclick = () => downloadFile(`${p.name}.kml`, kmlFor([{ ...p, poly: st.pts }]), 'application/vnd.google-earth.kml+xml');
+      $('#gSave', main).onclick = async () => {
+        stopGps(); st.walking = false;
+        const rec = { ...get('plots', id), poly: st.pts.map(x => [+x[0].toFixed(7), +x[1].toFixed(7)]) };
+        if (st.updArea) { const a = m2ToRai(m.m2); Object.assign(rec, { rai: a.rai, ngan: a.ngan, wa: a.wa, lat: +m.center[0].toFixed(5), lon: +m.center[1].toFixed(5) }); }
+        try { await saveRec('plots', rec); } catch (e) { return; }
+        toast('บันทึกขอบเขตแปลงแล้ว', 'ok'); go('plot', id);
+      };
+    };
+    draw();
+  }
+};
+function plotExtra(main, p) {
+  const pts = polyOf(p); const card = $('.card', main); if (!card) return;
+  const s = tapDue(p);
+  const html = `<div class="card"><div class="row"><h3 style="margin:0">${ic('map')} ขอบเขตและรอบกรีด</h3><span class="sp"></span><button class="btn sm" data-go="plotmap/${p.id}">${pts.length >= 3 ? ic('edit') + ' แก้ขอบเขต' : ic('pin') + ' วัดพื้นที่ GPS'}</button></div>
+    ${pts.length >= 3 ? `<div style="margin-top:10px">${polySvg(pts, 220)}</div><div class="small muted" style="text-align:center;margin-top:4px">วัดได้ ${raiText(polyMetrics(pts).m2)}</div>` : ''}
+    ${p.status === 'tapping' ? `<div class="small" style="margin-top:8px">${s.due ? '🟢' : '⏸️'} วันนี้: ${esc(s.why)}</div>` : ''}
+    <div class="row wrap" style="margin-top:8px"><button class="btn sm" data-go="fert">${ic('sprout')} คำนวณปุ๋ย</button></div></div>`;
+  card.insertAdjacentHTML('afterend', html);
+}
+
+/* ---------------- fertilizer calculator ---------------- */
+const FERT_NOTE = 'อ้างอิงคำแนะนำของสถาบันวิจัยยาง/กยท.: ยางเปิดกรีดใช้สูตร 30-5-18 หรือ 29-5-18 อัตรา 1 กก./ต้น/ปี แบ่งใส่ 2 ครั้ง (ต้นฝน พ.ค. และปลายฝน ก.ย.–ต.ค.) · ยางก่อนเปิดกรีด พื้นที่ปลูกแทน/เคยปลูกยางใช้ 20-8-20, พื้นที่ใหม่ดินร่วนเหนียว 20-10-12, ดินร่วนทราย 20-10-17 · อัตรายางเล็กในตารางเป็นค่าตั้งต้นโดยประมาณ ควรปรับตามผลวิเคราะห์ดิน/ใบ และคำแนะนำของ กยท. สาขาในพื้นที่';
+function fertPlan(p, replantArea) {
+  const age = plotAge(p); const sandy = /ทราย/.test(p.soil || '');
+  const young = p.status === 'young' || (age !== null && age < 7 && p.status !== 'tapping');
+  if (!young) return { stage: 'เปิดกรีด', formula: '30-5-18 (หรือ 29-5-18)', g: 500, times: 2 };
+  const months = age === null ? 24 : Math.max(1, age * 12);
+  const g = months <= 17 ? 90 : months <= 41 ? 190 : 250;
+  return { stage: `ยางเล็ก ${age ?? '?'} ปี`, formula: replantArea ? '20-8-20' : sandy ? '20-10-17' : '20-10-12', g, times: 2 };
+}
+ROUTES.fert = {
+  title: 'คำนวณปุ๋ยยาง',
+  render(main) {
+    const st = pstate('fert', () => ({ replant: true, sackPrice: '', over: {} }));
+    const lastFertPrice = () => { const e = list('expenses', r => /ปุ๋ย/.test(r.cat || '') && num(r.unitPrice) >= 300).sort(byDateDesc)[0]; return e ? num(e.unitPrice) : ''; };
+    if (st.sackPrice === '') st.sackPrice = lastFertPrice();
+    const draw = () => {
+      const plots = list('plots', p => inFarm(p) && p.status !== 'replant' && num(p.trees) > 0).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+      const bag = num(S().bagKg) || 50;
+      const rows = plots.map(p => { const f = fertPlan(p, st.replant); const g = num(st.over[p.id] ?? f.g); const kg = r2(num(p.trees) * g / 1000); return { p, f, g, kg, sacks: kg / bag }; });
+      const byF = groupBy(rows, r => r.f.formula);
+      const totalKg = sum(rows, 'kg');
+      main.innerHTML = `
+        <div class="card"><div class="fields">
+          <div class="field"><label class="switch"><input type="checkbox" id="fRep"${st.replant ? ' checked' : ''}> ยางเล็กปลูกในพื้นที่เคยปลูกยางมาก่อน (ปลูกแทน)</label></div>
+          <div class="field half"><label class="fl">ราคาปุ๋ยต่อกระสอบ (${bag} กก.)</label><div class="inp-wrap"><input class="inp has-suf" type="number" inputmode="decimal" id="fPrice" value="${esc(st.sackPrice)}"><span class="suf">บาท</span></div></div>
+        </div></div>
+        ${rows.length ? `<div class="sec-title">${ic('sprout')} ปุ๋ยที่ต้องใช้ “ต่อครั้ง” (ใส่ปีละ 2 ครั้ง)</div>
+        ${rows.map(r => `<div class="card"><div class="row"><b>${esc(r.p.name)}</b><span class="sp"></span><span class="badge">${esc(r.f.stage)}</span></div>
+          <div class="small muted">${fmt(r.p.trees)} ต้น · ดิน ${esc(r.p.soil || 'ไม่ระบุ')} · สูตร <b>${esc(r.f.formula)}</b></div>
+          <div class="fields" style="margin-top:6px"><div class="field half"><label class="fl">กรัม/ต้น/ครั้ง</label><input class="inp" type="number" inputmode="numeric" data-g="${r.p.id}" value="${r.g}"></div>
+          <div class="field half"><label class="fl">รวม</label><div style="padding:10px 0;font-weight:700">${fmt(r.kg, 1)} กก. ≈ ${fmt(r.sacks, 1)} กระสอบ${num(st.sackPrice) ? ` · ${baht(r.sacks * num(st.sackPrice))}` : ''}</div></div></div></div>`).join('')}
+        <div class="card"><h3>รวมต่อครั้ง</h3><dl class="kv">${Object.entries(byF).map(([f, rs]) => `<dt>สูตร ${esc(f)}</dt><dd>${fmt(sum(rs, 'kg'), 1)} กก. (${Math.ceil(sum(rs, 'kg') / bag)} กระสอบ)</dd>`).join('')}
+          ${num(st.sackPrice) ? `<dt>ค่าปุ๋ยโดยประมาณ/ครั้ง</dt><dd>${baht(totalKg / bag * num(st.sackPrice))}</dd><dt>ทั้งปี (2 ครั้ง)</dt><dd>${baht(totalKg / bag * num(st.sackPrice) * 2)}</dd>` : ''}</dl>
+          <button class="btn pri block" id="fEvents" style="margin-top:10px">${ic('cal')} สร้างนัดหมายใส่ปุ๋ย 2 ครั้ง</button></div>` : `<div class="list">${emptyBox('ยังไม่มีแปลงที่ระบุจำนวนต้น')}</div><button class="btn block" data-go="plots">${ic('leaf')} ไปที่แปลงยาง</button>`}
+        <div class="alert info">${ic('info')}<div class="small">${esc(FERT_NOTE)} · หว่านปุ๋ยห่างโคนต้นในแนวระหว่างแถว แล้วคราดกลบเพื่อลดการสูญเสีย</div></div>`;
+      $('#fRep', main).onchange = e => { st.replant = e.target.checked; draw(); };
+      $('#fPrice', main).addEventListener('change', e => { st.sackPrice = e.target.value; draw(); });
+      $$('[data-g]', main).forEach(i => i.addEventListener('change', () => { st.over[i.dataset.g] = num(i.value); draw(); }));
+      const ev = $('#fEvents', main);
+      if (ev) ev.onclick = async () => {
+        if (!canEdit()) return;
+        const t = today(); let y = +t.slice(0, 4);
+        const dates = [`${y}-05-15`, `${y}-09-20`].map(d => d < t ? `${+d.slice(0, 4) + 1}${d.slice(4)}` : d).sort();
+        const summary = Object.entries(byF).map(([f, rs]) => `สูตร ${f} ${fmt(sum(rs, 'kg'), 0)} กก.`).join(', ');
+        let n = 0;
+        for (const d of dates) {
+          const title = `ใส่ปุ๋ยยาง (${+d.slice(5, 7) === 5 ? 'ต้นฝน' : 'ปลายฝน'})`;
+          if (list('events', e => e.date === d && e.title === title).length) continue;
+          await saveRec('events', { date: d, title, type: 'fert', repeat: 'none', note: summary + ' · ' + rows.map(r => `${r.p.name} ${r.g} ก./ต้น`).join(', ') });
+          n++;
+        }
+        toast(n ? `สร้างนัดหมาย ${n} รายการแล้ว` : 'มีนัดหมายนี้อยู่แล้ว', n ? 'ok' : '');
+      };
+    };
+    draw();
+  }
+};
+
+/* ---------------- rainfall vs production ---------------- */
+async function loadRainHistory(force) {
+  const L = weatherLoc(); const end = addDays(today(), -6); const start = shiftYM(ymOf(end), -11) + '-01';
+  const key = `${L.lat},${L.lon},${start}`; const c = META.rainHist;
+  if (!force && c && c.key === key && Date.now() - c.at < 3 * 864e5) return c;
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${L.lat}&longitude=${L.lon}&start_date=${start}&end_date=${end}&daily=precipitation_sum&timezone=Asia%2FBangkok`;
+  const data = await fetch(url).then(r => r.json());
+  if (!data.daily || !data.daily.time) throw new Error(data.reason || 'ไม่มีข้อมูล');
+  const months = {};
+  data.daily.time.forEach((d, i) => { const ym = d.slice(0, 7); const v = num(data.daily.precipitation_sum[i]); const m = months[ym] || (months[ym] = { mm: 0, rainy: 0, days: 0 }); m.mm += v; m.days++; if (v >= 1) m.rainy++; });
+  META.rainHist = { key, at: Date.now(), name: L.name, months, end };
+  await store.putMeta(); return META.rainHist;
+}
+function rainCardHtml(h) {
+  const yms = Object.keys(h.months).sort().slice(-12);
+  const tapDays = ym => new Set(list('tapping', r => ymOf(r.date) === ym && r.rain !== 'skip' && inFarm(r)).map(r => r.date)).size;
+  const skipDays = ym => new Set(list('tapping', r => ymOf(r.date) === ym && r.rain === 'skip' && inFarm(r)).map(r => r.date)).size;
+  const kgOf = ym => sum(list('sales', r => ymOf(r.date) === ym && inFarm(r)), estDryKg);
+  const kg = yms.map(kgOf);
+  return `${barChart(yms.map(thYMs), [{ name: 'ฝน (มม.)', color: '#2563eb', values: yms.map(m => h.months[m].mm) }], { yfmt: v => fmt(v, 0) })}
+    ${kg.some(Boolean) ? lineChart(yms.map(thYMs), [{ name: 'เนื้อยางแห้งที่ขาย (กก.)', color: 'var(--pri2)', values: kg }], { zero: true, yfmt: v => fmt(v, 0) }) : ''}
+    <div class="tbl-wrap"><table class="tbl"><tr><th>เดือน</th><th class="n">ฝน มม.</th><th class="n">วันฝนตก</th><th class="n">วันกรีด</th><th class="n">หยุดเพราะฝน</th><th class="n">ยางแห้ง กก.</th></tr>
+    ${yms.map((m, i) => `<tr><td>${thYMs(m)}</td><td class="n">${fmt(h.months[m].mm, 0)}</td><td class="n">${h.months[m].rainy}</td><td class="n">${tapDays(m)}</td><td class="n">${skipDays(m)}</td><td class="n">${fmt(kg[i], 0)}</td></tr>`).join('')}</table></div>
+    <div class="hint">ข้อมูลฝนย้อนหลังจาก Open-Meteo (แบบจำลองสภาพอากาศ ณ พิกัด ${esc(h.name)}) ถึง ${thDate(h.end)} · วันฝนตก = ฝน ≥ 1 มม.</div>`;
+}
+{
+  const orig = reportsExtra;
+  reportsExtra = function (main) {
+    orig(main);
+    main.insertAdjacentHTML('beforeend', `<div class="card" id="rainCard"><h3>${ic('cloud')} ฝนเทียบกับการกรีดและผลผลิต (12 เดือน)</h3><div id="rainBody">${META.rainHist ? rainCardHtml(META.rainHist) : `<div class="small muted">กำลังโหลดข้อมูลฝนย้อนหลัง...</div>`}</div></div>`);
+    if (!navigator.onLine) return;
+    loadRainHistory().then(h => { const el = $('#rainBody'); if (el) el.innerHTML = rainCardHtml(h); }).catch(e => { const el = $('#rainBody'); if (el && !META.rainHist) el.innerHTML = `<div class="small muted">โหลดข้อมูลฝนไม่ได้ (${esc(e.message)}) ลองใหม่ภายหลัง</div>`; });
+  };
+}
+
+/* ---------------- settings: rest months ---------------- */
+{
+  const orig = ROUTES.settings.render;
+  ROUTES.settings.render = function (main) {
+    orig(main);
+    const rm = restMonths();
+    main.insertAdjacentHTML('beforeend', `<div class="card"><h3>${ic('drop')} รอบกรีด / ช่วงพักผลัดใบ</h3><div class="small muted" style="margin-bottom:6px">เดือนที่ควรหยุดกรีดเพื่อพักต้น (ภาคอีสานโดยทั่วไป ก.พ.–เม.ย.)</div><div class="mchips">${TH_MON.map((m, i) => `<label><input type="checkbox" data-rm="${i + 1}"${rm.includes(i + 1) ? ' checked' : ''}>${m}</label>`).join('')}</div><button class="btn block" id="rmSave" style="margin-top:8px">${ic('check')} บันทึก</button></div>`);
+    $('#rmSave', main).onclick = async () => { await setS({ restMonths: $$('[data-rm]:checked', main).map(i => +i.dataset.rm) }); toast('บันทึกแล้ว', 'ok'); };
+  };
+}
 </script>
 </body>
 </html>
