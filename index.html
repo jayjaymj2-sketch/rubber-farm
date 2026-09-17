@@ -310,6 +310,16 @@ body.simple .top h1{font-size:19px}
 .voice-btn svg{width:44px;height:44px}
 .voice-btn.on{background:var(--red);animation:vpulse 1.2s infinite}
 @keyframes vpulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}70%{box-shadow:0 0 0 22px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+/* v3 */
+body.portal .nav,body.portal #fab,body.portal #syncBtn,body.portal #farmSel,body.portal #backBtn,body.portal #ptr{display:none!important}
+body.portal #main{padding-bottom:24px}
+.ai-msg{border-radius:16px;padding:10px 14px;margin:0 0 10px;max-width:92%;line-height:1.6;font-size:15px}
+.ai-msg p{margin:4px 0}.ai-msg ul{margin:4px 0;padding-left:20px}.ai-msg li{margin:2px 0}
+.ai-msg.user{background:var(--pri);color:#fff;margin-left:auto;border-bottom-right-radius:4px}
+.ai-msg.model{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px;box-shadow:var(--shadow)}
+.ai-h{font-weight:700;margin:8px 0 2px}
+.ai-img{max-width:120px;max-height:120px;border-radius:10px;display:block;margin-bottom:6px}
+.lotdoc{font-size:14px;line-height:1.5}.lotdoc .tbl td,.lotdoc .tbl th{color:#111;background:#fff;border:1px solid #ddd;font-size:12px}
 </style>
 </head>
 <body>
@@ -319,7 +329,7 @@ body.simple .top h1{font-size:19px}
 /* =========================================================
    สวนยางพารา — แอพบริหารจัดการสวนยาง (Offline-first PWA)
    ========================================================= */
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '3.0.0';
 // ▼ ใส่ URL ของ Apps Script และรหัส API ตรงนี้ เพื่อให้ทุกเครื่องตั้งค่าอัตโนมัติ (ไม่บังคับ)
 const EMBED = { scriptUrl: '', apiKey: '' };
 
@@ -1772,10 +1782,10 @@ ROUTES.menu = {
   render(main) {
     const groups = [
       ['งานประจำวัน', [['voice', 'mic', 'พูด/พิมพ์บันทึก'], ['tapday', 'drop', 'กรีดหลายแปลง'], ['tapping', 'drop', 'บันทึกการกรีด'], ['sales', 'coins', 'ขายยาง'], ['prices', 'trend', 'ราคายาง'], ['calendar', 'cal', 'ปฏิทิน/นัดหมาย'], ['weather', 'cloud', 'สภาพอากาศ']]],
-      ['การเงิน', [['reports', 'chart', 'รายงาน/กำไรขาดทุน'], ['expenses', 'receipt', 'รายจ่าย'], ['incomes', 'cash', 'รายรับอื่นๆ'], ['tax', 'book', 'สรุปรายได้ยื่นภาษี']]],
+      ['การเงิน', [['reports', 'chart', 'รายงาน/กำไรขาดทุน'], ['expenses', 'receipt', 'รายจ่าย'], ['incomes', 'cash', 'รายรับอื่นๆ'], ['tax', 'book', 'สรุปรายได้ยื่นภาษี'], ['forecast', 'fc', 'พยากรณ์ผลผลิต/เงินสด']]],
       ['แรงงาน', [['workers', 'users', 'คนงาน/ยอดค้างจ่าย'], ['worklogs', 'clock', 'ค่าแรงรายวัน'], ['payments', 'wallet', 'จ่าย/เบิกเงิน']]],
-      ['สวนและการดูแล', [['farms', 'map', 'สวน'], ['plots', 'leaf', 'แปลงยาง'], ['activities', 'sprout', 'งานดูแลสวน/ปุ๋ย'], ['health', 'health', 'สุขภาพต้นยาง'], ['inventory', 'box', 'คลังวัสดุ'], ['claims', 'book', 'สิทธิ/เงินช่วยเหลือ กยท.'], ['fert', 'sprout', 'คำนวณปุ๋ย'], ['plotmap', 'map', 'วัดพื้นที่แปลง GPS']]],
-      ['เครื่องมือ', [['calc', 'calc', 'เครื่องคิดเลข'], ['guide', 'book', 'คู่มือสวนยาง'], ['settings', 'gear', 'ตั้งค่า/ซิงค์'], ['diag', 'info', 'ตรวจสอบระบบ']]],
+      ['สวนและการดูแล', [['farms', 'map', 'สวน'], ['plots', 'leaf', 'แปลงยาง'], ['activities', 'sprout', 'งานดูแลสวน/ปุ๋ย'], ['health', 'health', 'สุขภาพต้นยาง'], ['inventory', 'box', 'คลังวัสดุ'], ['claims', 'book', 'สิทธิ/เงินช่วยเหลือ กยท.'], ['fert', 'sprout', 'คำนวณปุ๋ย'], ['plotmap', 'map', 'วัดพื้นที่แปลง GPS'], ['eudr', 'shield', 'ยางยั่งยืน/EUDR']]],
+      ['เครื่องมือ', [['ai', 'bot', 'ผู้ช่วย AI ประจำสวน'], ['calc', 'calc', 'เครื่องคิดเลข'], ['guide', 'book', 'คู่มือสวนยาง'], ['settings', 'gear', 'ตั้งค่า/ซิงค์'], ['diag', 'info', 'ตรวจสอบระบบ']]],
     ];
     main.innerHTML = groups.map(([g, items]) => `<div class="sec-title">${g}</div><div class="menu-grid">${items.map(([r, i, l]) => `<button data-go="${r}"><span class="q">${ic(i)}</span>${l}</button>`).join('')}</div>`).join('') +
       `<div class="faint xs" style="text-align:center;margin-top:24px">สวนยางพารา v${APP_VERSION} · ${store.mode === 'idb' ? 'IndexedDB' : 'localStorage'}</div>`;
@@ -2465,6 +2475,8 @@ async function init() {
   try { await store.loadAll(); } catch (e) { console.error(e); toast('โหลดข้อมูลในเครื่องไม่สำเร็จ', 'err'); }
   META.dirty = META.dirty || {}; META.settings = META.settings || {};
   if (EMBED.scriptUrl && !META.settings.scriptUrl) { META.settings.scriptUrl = EMBED.scriptUrl; META.settings.apiKey = EMBED.apiKey; }
+  const hp = location.hash.match(/^#portal\?(.*)$/);
+  if (hp) { const q = new URLSearchParams(hp[1]); if (q.get('u') && q.get('k')) { try { localStorage.setItem('rf_portal', JSON.stringify({ u: q.get('u'), k: q.get('k') })); localStorage.removeItem('rf_portal_cache'); } catch (e) { } } history.replaceState(null, '', location.pathname + location.search + '#portal'); }
   const hs = location.hash.match(/^#setup\?(.*)$/);
   if (hs) {
     const q = new URLSearchParams(hs[1]);
@@ -2648,14 +2660,14 @@ ROUTES.settings.render = function (main) {
 
   const drawUsers = users => {
     const el = $('#usersList'); if (!el) return;
-    el.innerHTML = users.length ? `<div class="list" style="margin:0">${users.map(u => `<div class="item" style="cursor:default"><span class="ic ${u.active === false ? 'red' : ''}">${ic('users')}</span><span class="body"><span class="t">${esc(u.name)} ${u.active === false ? '<span class="badge red">ปิดใช้งาน</span>' : ''}</span><span class="d">${{ owner: 'เจ้าของ', editor: 'บันทึกได้', viewer: 'ดูอย่างเดียว' }[u.role]}</span></span><span class="row" style="gap:4px"><button class="btn sm" data-ulink="${u.id}">ลิงก์</button><button class="btn sm" data-utoggle="${u.id}">${u.active === false ? 'เปิด' : 'ปิด'}</button><button class="btn sm danger" data-udel="${u.id}">${ic('trash')}</button></span></div>`).join('')}</div>` : 'ยังไม่มีผู้ใช้เพิ่มเติม (ตอนนี้ใช้รหัสเจ้าของ)';
+    el.innerHTML = users.length ? `<div class="list" style="margin:0">${users.map(u => `<div class="item" style="cursor:default"><span class="ic ${u.active === false ? 'red' : ''}">${ic('users')}</span><span class="body"><span class="t">${esc(u.name)} ${u.active === false ? '<span class="badge red">ปิดใช้งาน</span>' : ''}</span><span class="d">${{ worker: 'คนงาน (ดูยอดของตัวเอง)', owner: 'เจ้าของ', editor: 'บันทึกได้', viewer: 'ดูอย่างเดียว' }[u.role]}</span></span><span class="row" style="gap:4px"><button class="btn sm" data-ulink="${u.id}">ลิงก์</button><button class="btn sm" data-utoggle="${u.id}">${u.active === false ? 'เปิด' : 'ปิด'}</button><button class="btn sm danger" data-udel="${u.id}">${ic('trash')}</button></span></div>`).join('')}</div>` : 'ยังไม่มีผู้ใช้เพิ่มเติม (ตอนนี้ใช้รหัสเจ้าของ)';
     $$('[data-ulink]', el).forEach(b => b.onclick = () => { const u = users.find(x => x.id === b.dataset.ulink); showUserLink(u); });
     $$('[data-utoggle]', el).forEach(b => b.onclick = async () => { const u = users.find(x => x.id === b.dataset.utoggle); try { drawUsers((await api('users.save', { user: { ...u, active: u.active === false } })).users); } catch (e) { toast(e.message, 'err'); } });
     $$('[data-udel]', el).forEach(b => b.onclick = async () => { const u = users.find(x => x.id === b.dataset.udel); if (!(await confirmBox(`ลบผู้ใช้ ${u.name}? เครื่องที่ใช้รหัสนี้จะซิงค์ไม่ได้อีก`, 'ลบ'))) return; try { drawUsers((await api('users.delete', { id: u.id })).users); } catch (e) { toast(e.message, 'err'); } });
   };
   const showUserLink = u => {
-    const link = setupLinkFor(u.key);
-    const ov = openSheet({ title: 'ลิงก์ตั้งค่าของ ' + u.name, body: `<p class="small">ส่งลิงก์นี้ให้ <b>${esc(u.name)}</b> ทางแชทส่วนตัว แล้วเปิดบนมือถือของเขาครั้งเดียว แอพจะเชื่อมต่อด้วยสิทธิ์ “${{ owner: 'เจ้าของ', editor: 'บันทึกได้', viewer: 'ดูอย่างเดียว' }[u.role]}”</p><textarea class="inp" rows="4" readonly style="font-size:12px">${esc(link)}</textarea><div class="alert" style="margin-top:10px">${ic('alert')}<div class="small">ใครได้ลิงก์นี้ไปจะใช้สิทธิ์นี้ได้ ถ้าลิงก์หลุดให้กด “ปิด” หรือลบผู้ใช้</div></div>`, foot: `<button class="btn" data-a="copy">${ic('copy')} คัดลอก</button><button class="btn pri" data-a="share">ส่งต่อ</button>` });
+    const link = u.role === 'worker' ? portalLinkFor(u.key) : setupLinkFor(u.key);
+    const ov = openSheet({ title: 'ลิงก์ตั้งค่าของ ' + u.name, body: `<p class="small">ส่งลิงก์นี้ให้ <b>${esc(u.name)}</b> ทางแชทส่วนตัว แล้วเปิดบนมือถือของเขาครั้งเดียว แอพจะเชื่อมต่อด้วยสิทธิ์ “${{ worker: 'คนงาน (ดูยอดของตัวเอง)', owner: 'เจ้าของ', editor: 'บันทึกได้', viewer: 'ดูอย่างเดียว' }[u.role]}”</p><textarea class="inp" rows="4" readonly style="font-size:12px">${esc(link)}</textarea><div class="alert" style="margin-top:10px">${ic('alert')}<div class="small">ใครได้ลิงก์นี้ไปจะใช้สิทธิ์นี้ได้ ถ้าลิงก์หลุดให้กด “ปิด” หรือลบผู้ใช้</div></div>`, foot: `<button class="btn" data-a="copy">${ic('copy')} คัดลอก</button><button class="btn pri" data-a="share">ส่งต่อ</button>` });
     $('[data-a=copy]', ov).onclick = () => copyText(link);
     $('[data-a=share]', ov).onclick = () => shareOrCopy(link, 'ลิงก์ตั้งค่าแอพสวนยาง');
   };
@@ -2820,7 +2832,7 @@ ROUTES.diag = {
       draw();
       if (S().scriptUrl) {
         const t0 = Date.now();
-        try { const r = await api('ping'); add('เชื่อมต่อ Google Sheets', true, `${r.user} (${{ owner: 'เจ้าของ', editor: 'บันทึกได้', viewer: 'ดูอย่างเดียว' }[r.role]}) · ${Date.now() - t0} ms · backend v${r.version || '1'}`); META.auth = { user: r.user, role: r.role, at: Date.now() }; }
+        try { const r = await api('ping'); add('เชื่อมต่อ Google Sheets', true, `${r.user} (${{ worker: 'คนงาน (ดูยอดของตัวเอง)', owner: 'เจ้าของ', editor: 'บันทึกได้', viewer: 'ดูอย่างเดียว' }[r.role]}) · ${Date.now() - t0} ms · backend v${r.version || '1'}`); META.auth = { user: r.user, role: r.role, at: Date.now() }; }
         catch (e) { add('เชื่อมต่อ Google Sheets', false, e.message); }
       } else add('เชื่อมต่อ Google Sheets', null, 'ยังไม่ได้ตั้งค่า');
       add('รอซิงค์', dirtyCount() === 0 ? true : null, dirtyCount() ? `${dirtyCount()} รายการยังไม่ขึ้น Sheets` : 'ไม่มีค้าง');
@@ -3117,8 +3129,7 @@ function wrapText(c, text, maxW) {
   for (const ch of parts) { const t = line + ch; if (c.measureText(t).width > maxW && line) { out.push(line); line = ch; } else line = t; }
   if (line) out.push(line); return out;
 }
-function payslipCanvas(w) {
-  const L = workerLedger(w.id);
+function payslipCanvas(w, L = workerLedger(w.id), farmTitle) {
   const lastPay = [...L.rows].reverse().find(r => r.kind === 'pay');
   let rows = L.rows.slice(lastPay ? L.rows.lastIndexOf(lastPay) + 1 : 0);
   if (!rows.length) rows = L.rows.slice(-10);
@@ -3131,7 +3142,7 @@ function payslipCanvas(w) {
   c.fillStyle = '#fff'; c.fillRect(0, 0, W, H);
   c.fillStyle = '#047857'; c.fillRect(0, 0, W, 120);
   c.fillStyle = '#fff'; c.font = `bold 34px ${font}`; c.fillText('สลิปรายได้ / ยอดค้างจ่าย', P, 56);
-  const farm = (curFarm !== 'all' && farmName(curFarm)) || list('farms')[0]?.name || 'สวนยางพารา';
+  const farm = farmTitle || (curFarm !== 'all' && farmName(curFarm)) || list('farms')[0]?.name || 'สวนยางพารา';
   c.font = `22px ${font}`; c.fillText(`${farm} · ออก ณ ${thDate(today(), true)}`, P, 96);
   c.fillStyle = '#111'; c.font = `bold 30px ${font}`; c.fillText(w.name, P, 168);
   c.fillStyle = '#555'; c.font = `22px ${font}`;
@@ -3517,6 +3528,454 @@ function rainCardHtml(h) {
     const rm = restMonths();
     main.insertAdjacentHTML('beforeend', `<div class="card"><h3>${ic('drop')} รอบกรีด / ช่วงพักผลัดใบ</h3><div class="small muted" style="margin-bottom:6px">เดือนที่ควรหยุดกรีดเพื่อพักต้น (ภาคอีสานโดยทั่วไป ก.พ.–เม.ย.)</div><div class="mchips">${TH_MON.map((m, i) => `<label><input type="checkbox" data-rm="${i + 1}"${rm.includes(i + 1) ? ' checked' : ''}>${m}</label>`).join('')}</div><button class="btn block" id="rmSave" style="margin-top:8px">${ic('check')} บันทึก</button></div>`);
     $('#rmSave', main).onclick = async () => { await setS({ restMonths: $$('[data-rm]:checked', main).map(i => +i.dataset.rm) }); toast('บันทึกแล้ว', 'ok'); };
+  };
+}
+/* =========================================================
+   v3.0: ผู้ช่วย AI ประจำสวน · EUDR/ย้อนกลับได้ · พอร์ทัลคนงาน · พยากรณ์เงิน
+   ========================================================= */
+Object.assign(ICONS, {
+  bot: '<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 13h.01M15 13h.01M9 17h6"/><circle cx="12" cy="3" r="1"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  fc: '<path d="M3 20h18"/><path d="M4 16l5-5 4 3 7-8"/><path d="M16 6h4v4"/>',
+});
+
+/* ---------------- worker portal ---------------- */
+const portalCfg = () => { try { return JSON.parse(localStorage.getItem('rf_portal') || 'null'); } catch (e) { return null; } };
+const isPortal = () => !!portalCfg() && !S().apiKey;
+const portalLinkFor = key => `${location.origin}${location.pathname}#portal?u=${encodeURIComponent(S().scriptUrl)}&k=${encodeURIComponent(key)}`;
+async function portalApi(action, payload = {}) {
+  const c = portalCfg(); if (!c) throw new Error('ยังไม่ได้ตั้งค่าลิงก์');
+  if (!navigator.onLine) throw new Error('ออฟไลน์อยู่');
+  const r = await fetch(c.u, { method: 'POST', body: JSON.stringify(Object.assign({ action, key: c.k }, payload)) });
+  let d; try { d = JSON.parse(await r.text()); } catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง'); }
+  if (!d.ok) throw new Error(d.error || 'ไม่สำเร็จ');
+  return d;
+}
+function portalLedger(data) {
+  const wid = data.worker.id; const rows = [];
+  (data.sales || []).forEach(r => { const c = saleCalc(r); rows.push({ date: r.date, kind: 'share', label: `ส่วนแบ่ง${PRODUCTS[r.product] || ''} ${fmt(r.weight)} กก.`, sub: `${fmt(100 - c.ownerPct)}% ของ ${baht(c.base)}${c.ids.length > 1 ? (c.custom ? ` · ได้ ${fmt(c.pctOf[wid])}%` : ` ÷ ${c.ids.length} คน`) : ''}`, amt: c.per[wid] ?? c.perTapper, t: num(r.createdAt) }); });
+  (data.worklogs || []).forEach(r => rows.push({ date: r.date, kind: 'wage', label: 'ค่าแรง: ' + (r.task || ''), sub: `${fmt(r.days)} วัน × ${baht(r.wage)}`, amt: r2(num(r.days) * num(r.wage)), t: num(r.createdAt) }));
+  (data.payments || []).forEach(r => rows.push({ date: r.date, kind: r.type, label: PAYMENT_TYPES[r.type] || 'จ่ายเงิน', sub: [r.method, r.note].filter(Boolean).join(' · '), amt: r.type === 'adjust' ? num(r.amount) : -num(r.amount), t: num(r.createdAt), pay: r }));
+  rows.sort((a, b) => String(a.date).localeCompare(String(b.date)) || a.t - b.t);
+  let bal = 0; rows.forEach(x => { bal = r2(bal + x.amt); x.bal = bal; });
+  return { rows, balance: bal, earned: r2(sum(rows.filter(x => x.amt > 0), 'amt')), paid: r2(-sum(rows.filter(x => x.kind === 'pay' || x.kind === 'advance'), 'amt')) };
+}
+ROUTES.portal = {
+  title: 'ยอดเงินของฉัน',
+  render(main) {
+    const c = portalCfg();
+    if (!c) { main.innerHTML = `<div class="list">${emptyBox('ยังไม่ได้เปิดลิงก์จากเจ้าของสวน กรุณาเปิดลิงก์ที่ได้รับทาง LINE อีกครั้ง', 'users')}</div>`; return; }
+    let cache = null; try { cache = JSON.parse(localStorage.getItem('rf_portal_cache') || 'null'); } catch (e) { }
+    const draw = (data, err) => {
+      if (!data) { main.innerHTML = `<div class="list">${emptyBox(err ? 'โหลดข้อมูลไม่ได้: ' + esc(err) : 'กำลังโหลดข้อมูล...', 'wallet')}</div>${err ? `<button class="btn block" id="pRe">ลองใหม่</button>` : ''}`; const b = $('#pRe', main); if (b) b.onclick = load; return; }
+      const L = portalLedger(data);
+      const pending = (data.payments || []).filter(p => (p.type === 'pay' || p.type === 'advance') && !p.confirmedAt && String(p.date) >= addDays(today(), -60)).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+      main.innerHTML = `
+        <div class="card hero"><div class="small faint">${esc(data.farm || 'สวนยางพารา')}</div><div style="font-size:20px;font-weight:700;margin-top:2px">${esc(data.worker.name)}</div>
+          <div style="font-size:34px;font-weight:800;margin-top:6px" class="tnum">${baht(Math.abs(L.balance), 2)}</div><div class="small faint">${L.balance >= 0 ? 'ยอดที่เจ้าของสวนค้างจ่ายคุณ' : 'เบิกเกินยอด'}</div>
+          <div class="xs faint" style="margin-top:6px">อัปเดต ${new Date(data.time).toLocaleString('th-TH')}${err ? ' · ออฟไลน์ แสดงข้อมูลล่าสุด' : ''}</div></div>
+        <div class="grid2" style="margin-bottom:12px">${kpi('ได้รับรวม', baht(L.earned))}${kpi('รับเงินไปแล้ว', baht(L.paid))}</div>
+        ${pending.length ? `<div class="sec-title">${ic('check')} ยืนยันว่าได้รับเงินแล้ว</div><div class="list">${pending.map(p => `<div class="item" style="cursor:default"><span class="ic amber">${ic('wallet')}</span><span class="body"><span class="t">${PAYMENT_TYPES[p.type]} ${baht(p.amount, 2)}</span><span class="d">${thDate(p.date)}${p.method ? ' · ' + esc(p.method) : ''}</span></span><button class="btn sm pri" data-conf="${esc(p.id)}">ได้รับแล้ว</button></div>`).join('')}</div>` : ''}
+        <div class="row wrap" style="margin-bottom:12px"><button class="btn sm" id="pRefresh">${ic('sync')} โหลดใหม่</button><button class="btn sm" id="pSlip">${ic('image')} บันทึกสลิปเป็นรูป</button></div>
+        <div class="sec-title">${ic('receipt')} รายการ (ล่าสุดก่อน)</div>
+        <div class="list">${L.rows.length ? L.rows.slice().reverse().slice(0, 80).map(x => `<div class="item" style="cursor:default"><span class="ic ${x.amt < 0 ? 'amber' : ''}">${ic(x.kind === 'share' ? 'coins' : x.kind === 'wage' ? 'clock' : 'wallet')}</span><span class="body"><span class="t">${esc(x.label)}${x.pay && x.pay.confirmedAt ? ' <span class="badge">✓ ยืนยันแล้ว</span>' : ''}</span><span class="d">${thDate(x.date)} · ${esc(x.sub || '')}</span></span><span class="r"><span class="a ${x.amt < 0 ? 'neg' : 'pos'}">${x.amt > 0 ? '+' : ''}${baht(x.amt)}</span><span class="xs faint">คงเหลือ ${baht(x.bal)}</span></span></div>`).join('') : emptyBox('ยังไม่มีรายการ', 'wallet')}</div>
+        <div class="card small muted">${ic('info')} หน้านี้แสดงเฉพาะข้อมูลของคุณ ถ้ายอดไม่ตรง ให้สอบถามเจ้าของสวน · <button class="lk" id="pOut">ออกจากหน้านี้</button></div>`;
+      $('#pRefresh', main).onclick = load;
+      $('#pSlip', main).onclick = () => shareCanvas(payslipCanvas({ name: data.worker.name }, L, data.farm), `slip-${data.worker.name}-${today()}.png`, 'สลิปของฉัน');
+      $('#pOut', main).onclick = async () => { if (await confirmBox('ออกจากหน้ายอดเงิน? ต้องเปิดลิงก์จากเจ้าของสวนใหม่เพื่อดูอีกครั้ง', 'ออก')) { try { localStorage.removeItem('rf_portal'); localStorage.removeItem('rf_portal_cache'); } catch (e) { } render(); } };
+      $$('[data-conf]', main).forEach(b => b.onclick = async () => {
+        const p = pending.find(x => x.id === b.dataset.conf);
+        if (!(await confirmBox(`ยืนยันว่าได้รับ ${PAYMENT_TYPES[p.type]} ${baht(p.amount, 2)} วันที่ ${thDate(p.date)} แล้ว?`, 'ได้รับแล้ว', false))) return;
+        b.disabled = true; try { await portalApi('portal.confirm', { paymentId: p.id }); toast('ยืนยันแล้ว ขอบคุณครับ', 'ok'); load(); } catch (e) { toast(e.message, 'err'); b.disabled = false; }
+      });
+    };
+    const load = () => portalApi('portal.get').then(d => { try { localStorage.setItem('rf_portal_cache', JSON.stringify(d)); } catch (e) { } cache = d; draw(d); }).catch(e => draw(cache, e.message));
+    draw(cache); load();
+  }
+};
+{
+  const origRender = render;
+  render = function () {
+    const portal = isPortal();
+    document.body.classList.toggle('portal', portal);
+    if (portal && route.name !== 'portal') { route = { name: 'portal', params: [] }; if (location.hash !== '#portal') history.replaceState(null, '', location.pathname + location.search + '#portal'); }
+    return origRender();
+  };
+}
+{
+  const orig = ROUTES.worker.render;
+  ROUTES.worker.render = function (main, id) {
+    orig(main, id);
+    const w = DB.workers.get(id); if (!w) return;
+    $$('[data-open^="payments:"]', main).forEach(el => { const p = DB.payments.get(el.dataset.open.split(':')[1]); if (p && p.confirmedAt) { const t = $('.t', el); if (t) t.insertAdjacentHTML('beforeend', ` <span class="badge" title="${esc(new Date(num(p.confirmedAt)).toLocaleString('th-TH'))}">✓ คนงานยืนยันรับเงิน</span>`); } });
+    if (role() !== 'owner' || !S().scriptUrl) return;
+    const anchor = $('#slipImg', main); if (!anchor) return;
+    anchor.insertAdjacentHTML('afterend', `<button class="btn sm" id="portalLink">${ic('users')} ลิงก์ให้คนงานดูยอด</button>`);
+    $('#portalLink', main).onclick = async e => {
+      const b = e.currentTarget; b.disabled = true;
+      try {
+        let u = (await api('users.list')).users.find(x => x.role === 'worker' && x.workerId === id && x.active !== false);
+        if (!u) u = (await api('users.save', { user: { name: w.name, role: 'worker', workerId: id } })).users.filter(x => x.role === 'worker' && x.workerId === id).pop();
+        const link = portalLinkFor(u.key);
+        const ov = openSheet({ title: 'ลิงก์ดูยอดของ ' + w.name, body: `<p class="small">ส่งลิงก์นี้ให้ <b>${esc(w.name)}</b> ทางแชทส่วนตัว เขาจะเห็น <b>เฉพาะยอดเงินและรายการของตัวเอง</b> (ไม่เห็นข้อมูลคนอื่น ร้านรับซื้อ หรือบัญชีสวน) และกด “ได้รับเงินแล้ว” เพื่อยืนยันการจ่ายได้</p><textarea class="inp" rows="3" readonly>${esc(link)}</textarea><div class="hint">ยกเลิกลิงก์ได้ที่ ตั้งค่า → ผู้ใช้และสิทธิ์</div>`, foot: `<button class="btn" data-a="copy">${ic('copy')} คัดลอก</button><button class="btn pri" data-a="share">แชร์</button>` });
+        $('[data-a=copy]', ov).onclick = () => copyText(link); $('[data-a=share]', ov).onclick = () => shareOrCopy(link, 'ดูยอดเงินสวนยาง');
+      } catch (err) { toast(err.message, 'err'); }
+      b.disabled = false;
+    };
+  };
+}
+
+/* ---------------- EUDR / traceability ---------------- */
+const RAI_PER_HA = 6.25;
+{
+  const f = SCHEMA.plots.fields; const i = f.findIndex(x => x.k === 'note');
+  f.splice(i, 0,
+    { k: 'landDoc', l: 'เอกสารสิทธิ์ที่ดินของแปลง', t: 'sel', opt: ['โฉนด', 'น.ส.3ก', 'น.ส.3', 'ส.ป.ก.4-01', 'ภ.บ.ท.5', 'สิทธิทำกินอื่นๆ', 'ไม่มีเอกสาร'], half: 1, hint: 'ข้อมูลส่วนนี้ใช้เตรียมหลักฐานยางยั่งยืน/EUDR' },
+    { k: 'raotNo', l: 'เลขทะเบียนสวน/แปลง กยท.', t: 'text', half: 1 },
+    { k: 'before2021', l: 'สภาพพื้นที่ก่อน 31 ธ.ค. 2563', t: 'sel', opt: { yes: 'เป็นสวนยาง/พื้นที่เกษตรอยู่แล้ว', no: 'เพิ่งเปลี่ยนมาจากพื้นที่ป่า', unknown: 'ไม่แน่ใจ' }, half: 1 },
+    { k: 'photos', l: 'รูปเอกสาร/หลักฐานแปลง', t: 'photos', max: 4 },
+  );
+  if (!PHOTO_COLLS.includes('plots')) PHOTO_COLLS.push('plots');
+}
+function segCross(a, b, c, d) {
+  const o = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
+  return o(a, b, c) !== o(a, b, d) && o(c, d, a) !== o(c, d, b);
+}
+function polySelfIntersects(pts) {
+  const n = pts.length; if (n < 4) return false;
+  const P = pts.map(p => [p[1], p[0]]);
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    if (Math.abs(i - j) <= 1 || (i === 0 && j === n - 1)) continue;
+    if (segCross(P[i], P[(i + 1) % n], P[j], P[(j + 1) % n])) return true;
+  }
+  return false;
+}
+const plotHa = p => { const pts = polyOf(p); return pts.length >= 3 ? polyMetrics(pts).m2 / 10000 : plotArea(p) / RAI_PER_HA; };
+function eudrCheck(p) {
+  const farm = get('farms', p.farmId) || {}; const pts = polyOf(p); const ha = plotHa(p);
+  const polyOk = pts.length >= 3 && !polySelfIntersects(pts);
+  const items = [
+    { k: 'geo', ok: ha > 4 ? polyOk : (polyOk || (num(p.lat) && num(p.lon))), label: ha > 4 ? `ขอบเขตแปลง (พื้นที่ ${fmt(ha, 2)} ha เกิน 4 ha ต้องเป็นรูปแปลง)` : 'พิกัดแปลง (จุด หรือ ขอบเขตแปลง)', go: 'plotmap/' + p.id },
+    ...(pts.length >= 3 && polySelfIntersects(pts) ? [{ k: 'poly', ok: false, label: 'ขอบเขตแปลงเส้นตัดกันเอง ต้องวัดใหม่', go: 'plotmap/' + p.id }] : []),
+    { k: 'doc', ok: !!p.landDoc && p.landDoc !== 'ไม่มีเอกสาร', label: 'เอกสารสิทธิ์ที่ดิน' + (p.landDoc ? ` (${p.landDoc})` : ''), open: 'plots:' + p.id },
+    { k: 'raot', ok: !!(p.raotNo || farm.raotNo), label: 'ขึ้นทะเบียนกับ กยท.', open: 'plots:' + p.id },
+    { k: 'cutoff', ok: p.before2021 === 'yes' || (num(p.plantYear) > 2400 && num(p.plantYear) <= 2563), bad: p.before2021 === 'no', label: 'ปลูก/เป็นพื้นที่เกษตรก่อน 31 ธ.ค. 2563 (ไม่มีการบุกรุกป่าหลังปี 2020)', open: 'plots:' + p.id },
+    { k: 'producer', ok: !!farm.owner, label: 'ชื่อผู้ผลิต/เจ้าของสวน', open: farm.id ? 'farms:' + farm.id : '' },
+  ];
+  const nOk = items.filter(x => x.ok).length;
+  return { items, ok: nOk === items.length && !items.some(x => x.bad), bad: items.some(x => x.bad), nOk, n: items.length, ha, pts };
+}
+const f6 = v => +(+v).toFixed(6);
+function plotFeature(p) {
+  const c = eudrCheck(p); const farm = get('farms', p.farmId) || {};
+  const geometry = c.pts.length >= 3 ? { type: 'Polygon', coordinates: [[...c.pts, c.pts[0]].map(([la, lo]) => [f6(lo), f6(la)])] } : { type: 'Point', coordinates: [f6(p.lon), f6(p.lat)] };
+  return { type: 'Feature', geometry, properties: { ProducerName: farm.owner || '', ProducerCountry: 'TH', ProductionPlace: p.name, Area: +c.ha.toFixed(4), Commodity: 'Natural rubber', RAOTRegistration: p.raotNo || farm.raotNo || '', LandDocument: p.landDoc || '', PlantingYearBE: num(p.plantYear) || '', Province: farm.province || '' } };
+}
+const geojsonOf = plots => JSON.stringify({ type: 'FeatureCollection', features: plots.filter(p => polyOf(p).length >= 3 || (num(p.lat) && num(p.lon))).map(plotFeature) }, null, 1);
+const EUDR_NOTE = 'กฎหมาย EUDR ของสหภาพยุโรปกำหนดให้ยางที่ส่งเข้า EU ต้องมาจากที่ดินที่ไม่มีการตัดไม้ทำลายป่าหลัง 31 ธ.ค. 2563 และระบุพิกัดแปลงปลูก (แปลงเกิน 4 เฮกตาร์ ≈ 25 ไร่ ต้องเป็นรูปแปลง ความละเอียดอย่างน้อย 6 ตำแหน่งทศนิยม) · ตามข้อมูลของคณะกรรมาธิการยุโรป (ก.ค. 2569) เริ่มบังคับกับผู้ประกอบการรายใหญ่/กลาง 30 ธ.ค. 2569 และรายย่อย 30 มิ.ย. 2570 · ผู้ส่งออก/ผู้รับซื้อเป็นผู้ยื่นเอกสารตรวจสอบ แอพนี้ช่วยเตรียมข้อมูลแปลงและการย้อนกลับของล็อตยาง ไม่ใช่การรับรอง ควรขึ้นทะเบียนและตรวจสอบกับ กยท. สาขา';
+ROUTES.eudr = {
+  title: 'ยางยั่งยืน / EUDR',
+  render(main) {
+    const plots = list('plots', p => inFarm(p) && p.status !== 'replant').sort((a, b) => a.name.localeCompare(b.name, 'th'));
+    const checks = plots.map(p => ({ p, c: eudrCheck(p) }));
+    const ready = checks.filter(x => x.c.ok);
+    const lots = list('sales', s => inFarm(s) && s.lotNo).sort(byDateDesc).slice(0, 15);
+    main.innerHTML = `
+      <div class="grid2" style="margin-bottom:12px">${kpi('แปลงที่ข้อมูลครบ', `${ready.length}/${plots.length}`, `${fmt(sum(ready, x => x.c.ha), 2)} ha พร้อมยื่น`, 'shield', ready.length === plots.length && plots.length ? 'pos' : 'warn')}${kpi('ล็อตยางที่ย้อนกลับได้', lots.length, 'ล็อตล่าสุด', 'coins')}</div>
+      <div class="alert info">${ic('info')}<div class="small">${esc(EUDR_NOTE)}</div></div>
+      <div class="sec-title">${ic('leaf')} ความพร้อมรายแปลง</div>
+      ${checks.map(({ p, c }) => `<div class="card"><div class="row"><b>${esc(p.name)}</b><span class="sp"></span><span class="badge ${c.ok ? '' : c.bad ? 'red' : 'amber'}">${c.ok ? 'พร้อม' : c.bad ? 'ไม่ผ่านเกณฑ์' : `ขาด ${c.n - c.nOk} ข้อ`}</span></div>
+        <div class="xs muted">${fmt(c.ha, 2)} ha (${fmt(c.ha * RAI_PER_HA, 2)} ไร่) · ${c.pts.length >= 3 ? `ขอบเขต ${c.pts.length} จุด` : num(p.lat) ? 'มีพิกัดจุด' : 'ยังไม่มีพิกัด'}</div>
+        <div style="margin-top:6px">${c.items.map(it => `<div class="row small" style="padding:3px 0"><span>${it.ok ? '✅' : it.bad ? '⛔' : '⬜'} ${esc(it.label)}</span><span class="sp"></span>${!it.ok && (it.go || it.open) ? `<button class="lk xs" ${it.go ? `data-go="${it.go}"` : `data-open="${it.open}"`}>แก้ไข</button>` : ''}</div>`).join('')}</div>
+        ${c.pts.length >= 3 ? `<div class="row wrap" style="margin-top:6px"><a class="btn sm" target="_blank" rel="noopener" href="https://geojson.io/#data=data:application/json,${encodeURIComponent(JSON.stringify({ type: 'FeatureCollection', features: [plotFeature(p)] }))}">${ic('map')} ดูบนแผนที่ดาวเทียม</a></div>` : ''}</div>`).join('') || `<div class="list">${emptyBox('ยังไม่มีแปลง')}</div>`}
+      <div class="row wrap" style="margin-bottom:12px"><button class="btn pri" id="gjAll" ${ready.length ? '' : 'disabled'}>${ic('download')} GeoJSON แปลงที่พร้อม (${ready.length})</button><button class="btn" id="gjAny">${ic('download')} GeoJSON ทุกแปลงที่มีพิกัด</button></div>
+      <div class="card small muted">${ic('info')} ไฟล์ GeoJSON นี้ใช้ส่งให้ผู้รับซื้อ/ผู้ส่งออก หรือ <b>อัปโหลดใน Global Forest Watch</b> (globalforestwatch.org → Map → Upload shape) เพื่อตรวจว่ามีการสูญเสียพื้นที่ป่าในแปลงหลังปี 2020 หรือไม่</div>
+      <div class="sec-title">${ic('coins')} ล็อตยางล่าสุด (กดเพื่อพิมพ์ใบแสดงแหล่งที่มา)</div>
+      <div class="list">${lots.map(s => { const pl = (s.originPlotIds || []).map(id => get('plots', id)).filter(Boolean); const allReady = pl.length && pl.every(x => eudrCheck(x).ok); return itemRow({ go: 'lot/' + s.id, icon: 'coins', cls: allReady ? '' : 'amber', t: `${esc(s.lotNo)} · ${PRODUCTS[s.product] || ''} ${fmt(s.weight)} กก.`, d: `${thDate(s.date)} · ${esc(s.buyer || '')}`, d2: pl.length ? 'จากแปลง ' + esc(pl.map(x => x.name).join(', ')) : '⚠️ ยังไม่ระบุแปลงที่มา', r: allReady ? '<span class="badge">ย้อนกลับได้</span>' : '<span class="badge amber">ข้อมูลไม่ครบ</span>' }); }).join('') || emptyBox('ยังไม่มีล็อต — เลขล็อตจะสร้างอัตโนมัติเมื่อบันทึกการขาย', 'coins')}</div>`;
+    $('#gjAll', main).onclick = () => downloadFile(`แปลงยาง-EUDR-${today()}.geojson`, geojsonOf(ready.map(x => x.p)), 'application/geo+json');
+    $('#gjAny', main).onclick = () => downloadFile(`แปลงยาง-ทั้งหมด-${today()}.geojson`, geojsonOf(plots), 'application/geo+json');
+  }
+};
+function nextLotNo(date = today()) {
+  const d = String(date).replace(/-/g, '').slice(2);
+  const used = new Set(list('sales', s => s.lotNo && s.lotNo.startsWith('L' + d)).map(s => s.lotNo));
+  let n = 1; while (used.has(`L${d}-${n}`)) n++;
+  return `L${d}-${n}`;
+}
+{
+  const f = SCHEMA.sales.fields; const i = f.findIndex(x => x.k === 'received');
+  f.splice(i, 0,
+    { k: 'originPlotIds', l: 'ยางล็อตนี้มาจากแปลง (ย้อนกลับได้)', t: 'mref', coll: 'plots', label: p => p.name, filter: (p, d) => (d.farmId ? p.farmId === d.farmId : inFarm(p)) && p.status !== 'young', def: d => { if (d.plotId) return [d.plotId]; const from = addDays(d.date || today(), -14); return [...new Set(list('tapping', r => r.date >= from && r.date <= (d.date || today()) && r.rain !== 'skip' && (!d.farmId || farmOf(r) === d.farmId)).map(r => r.plotId))].filter(id => get('plots', id)); } },
+    { k: 'lotNo', l: 'เลขล็อต', t: 'text', half: 1, def: d => nextLotNo(d.date) },
+  );
+  SCHEMA.sales.remember = (SCHEMA.sales.remember || []).filter(k => k !== 'originPlotIds' && k !== 'lotNo');
+  const oc = SCHEMA.sales.onChange;
+  SCHEMA.sales.onChange = (k, d, isNew) => { if (oc) oc(k, d, isNew); if (k === 'plotId' && d.plotId && !(d.originPlotIds || []).length) d.originPlotIds = [d.plotId]; if (k === 'date' && isNew && /^L\d{6}-\d+$/.test(d.lotNo || '')) d.lotNo = nextLotNo(d.date); };
+  const as = SCHEMA.sales.afterSave;
+  SCHEMA.sales.afterSave = async (s, isNew) => { if (as) await as(s, isNew); if (!s.lotNo) await saveRec('sales', { ...get('sales', s.id), lotNo: nextLotNo(s.date) }); };
+}
+function lotQrText(s) {
+  const pl = (s.originPlotIds || []).map(id => get('plots', id)).filter(Boolean);
+  const head = `RUBBER-LOT|${s.lotNo}|${s.date}|${String(s.product || '').toUpperCase()}|${fmt(s.weight, 1).replace(/,/g, '')}KG|TH`;
+  const parts = []; let len = head.length;
+  for (const p of pl) { const c = eudrCheck(p); const ctr = c.pts.length >= 3 ? polyMetrics(c.pts).center : [num(p.lat), num(p.lon)]; if (!ctr[0]) continue; const t = `|P:${ctr[0].toFixed(6)},${ctr[1].toFixed(6)},${c.ha.toFixed(2)}HA${(p.raotNo ? ',R' + String(p.raotNo).replace(/[^A-Za-z0-9-]/g, '') : '')}`; if (len + t.length > 200) { parts.push('|+MORE'); break; } parts.push(t); len += t.length; }
+  return head + parts.join('');
+}
+ROUTES.lot = {
+  title: id => 'ล็อต ' + (get('sales', id)?.lotNo || ''),
+  render(main, id) {
+    const s = get('sales', id); if (!s) { main.innerHTML = emptyBox('ไม่พบรายการขาย'); return; }
+    const pl = (s.originPlotIds || []).map(x => get('plots', x)).filter(Boolean);
+    const farm = get('farms', s.farmId) || get('farms', pl[0]?.farmId) || list('farms')[0] || {};
+    let qr = ''; try { qr = QR.toCanvas(lotQrText(s), 5, 3).toDataURL('image/png'); } catch (e) { }
+    const docHtml = `
+      <div class="lotdoc"><div style="display:flex;gap:14px;align-items:flex-start"><div style="flex:1"><div style="font-size:12px;color:#555">ใบแสดงแหล่งที่มาของยาง / Rubber Origin Statement</div><div style="font-size:22px;font-weight:800;margin:2px 0">ล็อต ${esc(s.lotNo || '-')}</div>
+        <div>${esc(farm.name || '')} · ${esc([farm.district, farm.province].filter(Boolean).join(' '))} · ประเทศไทย (TH)</div><div>ผู้ผลิต/เจ้าของสวน: <b>${esc(farm.owner || '-')}</b>${farm.raotNo ? ` · ทะเบียน กยท. ${esc(farm.raotNo)}` : ''}</div></div>${qr ? `<img src="${qr}" style="width:120px;height:120px">` : ''}</div>
+        <table class="tbl" style="margin-top:10px"><tr><td>วันที่ขาย</td><td>${thDate(s.date, true)}</td></tr><tr><td>ชนิดยาง</td><td>${esc(PRODUCTS[s.product] || '')}</td></tr><tr><td>น้ำหนัก</td><td>${fmt(s.weight, 2)} กก.${num(s.drc) ? ` · DRC ${fmt(s.drc)}%` : ''}</td></tr><tr><td>ผู้รับซื้อ</td><td>${esc(s.buyer || '-')}</td></tr></table>
+        <div style="font-weight:700;margin-top:10px">แปลงที่มาของยาง</div>
+        <div style="overflow-x:auto"><table class="tbl"><tr><th>แปลง</th><th>พื้นที่ (ha)</th><th>พิกัด (WGS84)</th><th>เอกสาร/ทะเบียน</th><th>ปีที่ปลูก</th><th>สถานะข้อมูล</th></tr>
+        ${pl.map(p => { const c = eudrCheck(p); const ctr = c.pts.length >= 3 ? polyMetrics(c.pts).center : [num(p.lat), num(p.lon)]; return `<tr><td>${esc(p.name)}</td><td>${fmt(c.ha, 4)}</td><td>${ctr[0] ? `${ctr[0].toFixed(6)}, ${ctr[1].toFixed(6)}${c.pts.length >= 3 ? ` (ขอบเขต ${c.pts.length} จุด)` : ' (จุด)'}` : '-'}</td><td>${esc([p.landDoc, p.raotNo ? 'กยท. ' + p.raotNo : ''].filter(Boolean).join(' · ') || '-')}</td><td>${num(p.plantYear) ? 'พ.ศ. ' + p.plantYear : '-'}</td><td>${c.ok ? 'ครบ' : c.bad ? 'ไม่ผ่านเกณฑ์' : 'ขาด ' + (c.n - c.nOk) + ' ข้อ'}</td></tr>`; }).join('') || '<tr><td colspan="6">ยังไม่ระบุแปลงที่มา</td></tr>'}</table></div>
+        <div style="font-size:11px;color:#666;margin-top:8px">ข้อมูลจัดทำโดยเจ้าของสวนผ่านแอพสวนยางพารา เมื่อ ${thDate(today(), true)} · พิกัดขอบเขตแปลงแนบเป็นไฟล์ GeoJSON · เอกสารนี้ไม่ใช่ใบรับรองจากหน่วยงานราชการ</div></div>`;
+    main.innerHTML = `${!pl.length ? `<div class="alert">${ic('alert')}<div class="small">ยังไม่ได้ระบุแปลงที่มา <button class="lk" data-open="sales:${s.id}">แก้ไขรายการขาย</button></div></div>` : ''}
+      <div class="card" style="background:#fff;color:#111">${docHtml}</div>
+      <div class="row wrap"><button class="btn pri" id="lotPrint">${ic('print')} พิมพ์ / บันทึก PDF</button><button class="btn" id="lotGeo" ${pl.length ? '' : 'disabled'}>${ic('download')} GeoJSON ของล็อต</button><button class="btn" data-open="sales:${s.id}">${ic('edit')} แก้ไขรายการขาย</button></div>`;
+    $('#lotGeo', main).onclick = () => downloadFile(`${s.lotNo}.geojson`, geojsonOf(pl), 'application/geo+json');
+    $('#lotPrint', main).onclick = () => {
+      const css = `body{font-family:"Sarabun","Noto Sans Thai",sans-serif;margin:24px;color:#111;font-size:14px}.tbl{border-collapse:collapse;width:100%}.tbl td,.tbl th{border:1px solid #bbb;padding:5px 6px;text-align:left;font-size:13px}`;
+      const fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'; document.body.appendChild(fr);
+      fr.contentDocument.open(); fr.contentDocument.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(s.lotNo)}</title><style>${css}</style></head><body>${docHtml}</body></html>`); fr.contentDocument.close();
+      setTimeout(() => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { toast('พิมพ์ไม่ได้บนเครื่องนี้', 'warn'); } setTimeout(() => fr.remove(), 2000); }, 400);
+    };
+  }
+};
+
+/* ---------------- cash-flow & yield forecast ---------------- */
+const SEASON_W = [0.09, 0.03, 0.01, 0.02, 0.06, 0.08, 0.09, 0.09, 0.10, 0.12, 0.15, 0.16];
+function forecastCompute(opt = {}) {
+  const t = today(); const ym0 = ymOf(t);
+  const priceAdj = 1 + num(opt.price) / 100, yieldAdj = 1 + num(opt.yield) / 100, costAdj = 1 + num(opt.cost) / 100;
+  const salesIn = (a, b) => list('sales', s => s.date >= a && s.date <= b && inFarm(s));
+  const monthDry = ym => sum(salesIn(ym + '-01', lastDay(ym)), estDryKg);
+  // recent price per dry kg and owner share
+  const rec = salesIn(addDays(t, -120), t); const recDry = sum(rec, estDryKg); const recNet = sum(rec, s => saleCalc(s).net); const recOwner = sum(rec, s => saleCalc(s).ownerNet);
+  let pDry = recDry ? recNet / recDry : 0; let ownerRatio = recNet ? recOwner / recNet : 0;
+  if (!pDry) { const lp = list('prices', r => r.product === 'cuplump').sort(byDateDesc)[0]; pDry = lp ? num(lp.price) * 100 / (num(S().cupDrc) || 50) : 0; }
+  if (!ownerRatio) ownerRatio = list('workers', w => w.payType === 'share' && w.active !== false).length ? num(S().ownerPct) / 100 : 1;
+  const tappingArea = sum(list('plots', p => inFarm(p) && p.status === 'tapping'), plotArea);
+  const annualRef = tappingArea * (num(S().refYield) || 250);
+  // trend: last 3 full months vs same months a year before
+  let a = 0, b = 0; for (let i = 1; i <= 3; i++) { const m = shiftYM(ym0, -i); a += monthDry(m); b += monthDry(shiftYM(m, -12)); }
+  const trend = a && b ? Math.min(1.4, Math.max(0.6, a / b)) : 1;
+  const costOf = ym => { const P = pnl(ym + '-01', lastDay(ym)); return P.wages + P.adjust + P.expenses; };
+  const last6cost = [1, 2, 3, 4, 5, 6].map(i => costOf(shiftYM(ym0, -i)));
+  const avgCost = sum(last6cost, x => x) / 6;
+  const rest = restMonths();
+  const months = [];
+  let cash = num(opt.cash);
+  for (let i = 0; i < 12; i++) {
+    const ym = shiftYM(ym0, i); const mi = +ym.slice(5, 7) - 1; const ly = shiftYM(ym, -12);
+    let dry, src;
+    const lyDry = monthDry(ly);
+    if (lyDry) { dry = lyDry * trend; src = 'ปีก่อน'; } else { dry = annualRef * SEASON_W[mi]; src = 'ค่าอ้างอิง'; }
+    if (rest.includes(mi + 1) && !lyDry) dry *= 0.3;
+    dry *= yieldAdj;
+    if (i === 0) { const done = monthDry(ym); const frac = (+t.slice(8, 10)) / +lastDay(ym).slice(8, 10); dry = Math.max(done, done + dry * (1 - frac)); }
+    const income = dry * pDry * priceAdj * ownerRatio;
+    const lyCost = costOf(ly); const cost = (lyCost || avgCost) * costAdj;
+    const net = income - cost; cash += net;
+    months.push({ ym, dry, income, cost, net, cash, src });
+  }
+  const minCash = Math.min(...months.map(m => m.cash));
+  const minM = months.find(m => m.cash === minCash);
+  return { months, pDry, ownerRatio, trend, annualRef, minCash, minM, totalNet: sum(months, 'net'), totalIncome: sum(months, 'income') };
+}
+ROUTES.forecast = {
+  title: 'พยากรณ์ผลผลิตและเงินสด',
+  render(main) {
+    const st = pstate('forecast', () => ({ price: 0, yield: 0, cost: 0, cash: '' }));
+    const draw = () => {
+      const F = forecastCompute(st);
+      const neg = F.months.filter(m => m.net < 0);
+      main.innerHTML = `
+        <div class="card"><div class="fields">
+          <div class="field"><label class="fl">เงินสดสำหรับสวนตอนนี้ (ถ้าต้องการดูเงินคงเหลือ)</label><div class="inp-wrap"><input class="inp has-suf" id="fcCash" type="number" inputmode="decimal" value="${esc(st.cash)}" placeholder="0"><span class="suf">บาท</span></div></div>
+          ${[['price', 'ราคายาง', -40, 40], ['yield', 'ผลผลิต', -40, 40], ['cost', 'ค่าใช้จ่าย', -30, 50]].map(([k, l, mn, mx]) => `<div class="field"><label class="fl">${l}: <b id="fcv_${k}">${st[k] > 0 ? '+' : ''}${st[k]}%</b></label><input type="range" min="${mn}" max="${mx}" step="5" value="${st[k]}" data-fc="${k}" style="width:100%"></div>`).join('')}
+        </div><div class="row wrap"><button class="btn sm" data-sc="price:-20">ราคาตก 20%</button><button class="btn sm" data-sc="yield:-15">ฝนมาก/โรคใบร่วง ผลผลิต -15%</button><button class="btn sm" data-sc="cost:20">ปุ๋ยแพงขึ้น 20%</button><button class="btn sm" data-sc="reset">ค่าปกติ</button></div></div>
+        <div class="grid2" style="margin-bottom:12px">${kpi('รายรับเจ้าของ 12 เดือน', bahtS(F.totalIncome), `ยางแห้ง ~${fmt(sum(F.months, 'dry'), 0)} กก.`, 'coins', 'pos')}${kpi('กำไรสุทธิ 12 เดือน', bahtS(F.totalNet), `ราคาแห้งที่ใช้ ${fmt(F.pDry * (1 + st.price / 100), 1)} บ./กก.`, 'fc', F.totalNet < 0 ? 'neg' : 'pos')}</div>
+        ${neg.length ? `<div class="alert">${ic('alert')}<div class="small"><b>เดือนที่รายจ่ายมากกว่ารายรับ:</b> ${neg.map(m => `${thYMs(m.ym)} (${bahtS(m.net)})`).join(', ')}${num(st.cash) || F.minCash < 0 ? `<br>เงินสดต่ำสุดประมาณ <b>${baht(F.minCash)}</b> ช่วง ${thYM(F.minM.ym)}${F.minCash < 0 ? ` — ควรกันเงินสำรองอย่างน้อย ${baht(-F.minCash)} ก่อนถึงช่วงนั้น` : ''}` : ''}</div></div>` : `<div class="alert ok">${ic('check')}<div class="small">ทุกเดือนรายรับมากกว่ารายจ่ายตามสมมติฐานนี้</div></div>`}
+        <div class="card"><h3>${ic('chart')} รายรับเจ้าของเทียบค่าใช้จ่าย</h3>${barChart(F.months.map(m => thYMs(m.ym)), [{ name: 'รายรับเจ้าของ', color: 'var(--pri2)', values: F.months.map(m => m.income) }, { name: 'ค่าใช้จ่าย', color: 'var(--red)', values: F.months.map(m => m.cost) }])}
+          ${num(st.cash) ? lineChart(F.months.map(m => thYMs(m.ym)), [{ name: 'เงินสดคงเหลือ', color: '#2563eb', values: F.months.map(m => m.cash) }], { yfmt: bahtS }) : ''}</div>
+        <div class="card"><div class="tbl-wrap"><table class="tbl"><tr><th>เดือน</th><th class="n">ยางแห้ง กก.</th><th class="n">รายรับ</th><th class="n">ค่าใช้จ่าย</th><th class="n">สุทธิ</th>${num(st.cash) ? '<th class="n">เงินสด</th>' : ''}</tr>
+          ${F.months.map(m => `<tr><td>${thYMs(m.ym)}<div class="xs faint">${m.src}</div></td><td class="n">${fmt(m.dry, 0)}</td><td class="n">${bahtS(m.income)}</td><td class="n">${bahtS(m.cost)}</td><td class="n ${m.net < 0 ? 'neg' : ''}">${bahtS(m.net)}</td>${num(st.cash) ? `<td class="n ${m.cash < 0 ? 'neg' : ''}">${bahtS(m.cash)}</td>` : ''}</tr>`).join('')}</table></div>
+          <div class="hint">วิธีคิด: ผลผลิตเดือนเดียวกันของปีก่อน × แนวโน้ม 3 เดือนล่าสุด (${fmt(F.trend * 100, 0)}%) ถ้าไม่มีข้อมูลใช้ผลผลิตอ้างอิง ${fmt(F.annualRef, 0)} กก./ปี กระจายตามฤดูกาล · ราคาเนื้อยางแห้งเฉลี่ย 4 เดือนล่าสุด · สัดส่วนเจ้าของ ${fmt(F.ownerRatio * 100, 0)}% · ค่าใช้จ่ายเดือนเดียวกันปีก่อน (หรือเฉลี่ย 6 เดือน) — เป็นการประมาณ ไม่ใช่การคาดการณ์ราคาจริง</div>
+          <button class="btn block" id="fcAi" style="margin-top:10px">${ic('bot')} ให้ผู้ช่วย AI วิเคราะห์และแนะนำการเตรียมเงิน</button></div>`;
+      $$('[data-fc]', main).forEach(r => { r.oninput = () => { $('#fcv_' + r.dataset.fc, main).textContent = (r.value > 0 ? '+' : '') + r.value + '%'; }; r.onchange = () => { st[r.dataset.fc] = +r.value; draw(); }; });
+      $('#fcCash', main).onchange = e => { st.cash = e.target.value; draw(); };
+      $$('[data-sc]', main).forEach(b => b.onclick = () => { if (b.dataset.sc === 'reset') Object.assign(st, { price: 0, yield: 0, cost: 0 }); else { const [k, v] = b.dataset.sc.split(':'); st[k] = +v; } draw(); });
+      $('#fcAi', main).onclick = () => askAi(`ช่วยวิเคราะห์การพยากรณ์ผลผลิตและเงินสด 12 เดือนข้างหน้า (สมมติฐาน: ราคา ${st.price}% ผลผลิต ${st.yield}% ค่าใช้จ่าย ${st.cost}% เงินสดตอนนี้ ${num(st.cash)} บาท) บอกช่วงที่เสี่ยงขาดเงิน ควรกันเงินสำรองเท่าไร และมีทางเพิ่มรายได้/ลดรายจ่ายอะไรบ้าง`);
+    };
+    draw();
+  }
+};
+
+/* ---------------- AI assistant ---------------- */
+function aiContext() {
+  const t = today(); const ym = ymOf(t); const anon = S().aiAnon !== false;
+  const wAlias = {}; activeWorkers().concat(list('workers')).forEach((w, i) => { if (!wAlias[w.id]) wAlias[w.id] = anon ? `คนงาน${Object.keys(wAlias).length + 1}` : w.name; });
+  const L = [];
+  const farms = list('farms');
+  L.push(`สวน: ${farms.map(f => `${f.name} (${[f.district, f.province].filter(Boolean).join(' ')})`).join('; ') || '-'}`);
+  L.push('แปลง: ' + list('plots').map(p => `${p.name}[${PLOT_STATUS[p.status] || ''}, ${fmt(plotArea(p), 1)} ไร่, ${fmt(p.trees)} ต้น, อายุ ${plotAge(p) ?? '?'} ปี, ${p.variety || ''}, ระบบกรีด ${(p.tapSystem || '-').split(' (')[0]}, ดิน ${p.soil || '-'}]`).join('; '));
+  const y = +t.slice(0, 4);
+  const PY = plotYields(y), PY1 = plotYields(y - 1);
+  L.push(`ผลผลิตยางแห้งต่อไร่ (ค่าอ้างอิง ${S().refYield} กก./ไร่/ปี): ` + PY.map(x => { const o = PY1.find(z => z.p.id === x.p.id); return `${x.p.name} ปีนี้ถึงวันนี้ ${fmt(x.area ? x.dry / x.area : 0, 0)} ปีก่อน ${fmt(o && o.area ? o.dry / o.area : 0, 0)}`; }).join('; '));
+  L.push('สรุปรายเดือน (เดือน: ขายกก./ยางแห้งกก./ราคาเฉลี่ยบ.กก./รายรับเจ้าของ/ค่าแรง/รายจ่ายอื่น/กำไร/วันกรีด/วันหยุดฝน):');
+  for (let i = 11; i >= 0; i--) {
+    const m = shiftYM(ym, -i); const P = pnl(m + '-01', lastDay(m));
+    const skip = new Set(list('tapping', r => ymOf(r.date) === m && r.rain === 'skip' && inFarm(r)).map(r => r.date)).size;
+    L.push(`${m}: ${fmt(P.kg, 0)}/${fmt(P.dryKg, 0)}/${P.kg ? fmt(P.gross / P.kg, 2) : '-'}/${fmt(P.ownerNet + P.other, 0)}/${fmt(P.wages + P.adjust, 0)}/${fmt(P.expenses, 0)}/${fmt(r2(P.ownerNet + P.other - P.wages - P.adjust - P.expenses), 0)}/${P.tapDays}/${skip}`);
+  }
+  const cat = (a, b) => { const o = {}; list('expenses', r => r.date >= a && r.date <= b && inFarm(r)).forEach(r => o[r.cat || 'อื่นๆ'] = (o[r.cat || 'อื่นๆ'] || 0) + num(r.amount)); return Object.entries(o).map(([k, v]) => `${k} ${fmt(v, 0)}`).join(', ') || '-'; };
+  L.push(`รายจ่ายตามหมวด 90 วันล่าสุด: ${cat(addDays(t, -90), t)} | 90 วันก่อนหน้านั้น: ${cat(addDays(t, -180), addDays(t, -91))}`);
+  Object.keys(PRODUCTS).forEach(p => { const rs = list('prices', r => r.product === p && r.date >= addDays(t, -90)).sort((a, b) => a.date.localeCompare(b.date)); if (!rs.length) return; const v = rs.map(r => num(r.price)); L.push(`ราคา${PRODUCTS[p]} 90 วัน: ล่าสุด ${fmt(v[v.length - 1], 2)} (${rs[rs.length - 1].date}) ต่ำสุด ${fmt(Math.min(...v), 2)} สูงสุด ${fmt(Math.max(...v), 2)} เฉลี่ย ${fmt(sum(v, x => x) / v.length, 2)}`); });
+  L.push('คนงาน: ' + (list('workers', w => w.active !== false).map(w => `${wAlias[w.id]}(${PAY_TYPES[w.payType] || ''}${w.payType === 'share' ? ' เจ้าของ ' + fmt(w.ownerPct) + '%' : ''}, ค้างจ่าย ${fmt(workerLedger(w.id).balance, 0)})`).join('; ') || '-'));
+  const sick = list('health', h => h.status !== 'resolved'); if (sick.length) L.push('ปัญหาสุขภาพต้นที่ยังไม่หาย: ' + sick.map(h => `${h.issue} แปลง${plotName(h.plotId)} ${h.trees || '?'} ต้น รุนแรง${{ low: 'น้อย', mid: 'ปานกลาง', high: 'มาก' }[h.severity] || ''} (พบ ${h.date})`).join('; '));
+  const acts = list('activities', r => r.date >= addDays(t, -365)).sort(byDateDesc).slice(0, 12); if (acts.length) L.push('งานดูแลสวนล่าสุด: ' + acts.map(a => `${a.date} ${a.type} ${plotName(a.plotId)} ${a.detail || ''}`).join('; '));
+  const low = list('items', i => num(i.minQty) > 0 && itemStock(i.id) <= num(i.minQty)); if (low.length) L.push('วัสดุใกล้หมด: ' + low.map(i => `${i.name} เหลือ ${fmt(itemStock(i.id))} ${i.unit || ''}`).join(', '));
+  const rem = reminders(14); if (rem.length) L.push('นัดหมาย/งาน 14 วัน: ' + rem.slice(0, 10).map(r => `${r.date} ${r.text}`).join('; '));
+  const w = META.weather?.data?.daily; if (w) L.push('พยากรณ์อากาศ: ' + w.time.slice(0, 8).map((d, i) => `${d} ฝน ${fmt(w.precipitation_sum[i], 1)}มม.(${w.precipitation_probability_max?.[i] ?? '?'}%) ${fmt(w.temperature_2m_max[i], 0)}°`).join('; '));
+  const tp = list('plots', p => p.status === 'tapping').map(p => `${p.name}: ${tapDue(p).why}`); if (tp.length) L.push('รอบกรีดวันนี้: ' + tp.join('; '));
+  try { const F = forecastCompute({}); L.push(`พยากรณ์ 12 เดือน (ประมาณ): รายรับเจ้าของ ${fmt(F.totalIncome, 0)} กำไร ${fmt(F.totalNet, 0)} เดือนสุทธิติดลบ: ${F.months.filter(m => m.net < 0).map(m => m.ym).join(', ') || 'ไม่มี'}`); } catch (e) { }
+  const ec = list('plots', p => p.status !== 'replant').map(p => { const c = eudrCheck(p); return `${p.name} ${c.ok ? 'พร้อม' : 'ขาด ' + c.items.filter(x => !x.ok).map(x => x.k).join('/')}`; }); if (ec.length) L.push('ความพร้อม EUDR: ' + ec.join('; '));
+  return L.join('\n').slice(0, 14000);
+}
+function aiSystem() {
+  const prov = list('farms')[0]?.province || 'บึงกาฬ';
+  return `คุณคือ "ผู้ช่วยประจำสวนยาง" ของครอบครัวเกษตรกรสวนยางพาราในจังหวัด${prov} ประเทศไทย
+หลักการตอบ:
+- ตอบภาษาไทยที่เข้าใจง่าย กระชับ ใช้หัวข้อย่อย (- ) และตัวหนา **คำสำคัญ** ได้ ไม่ต้องใช้ตาราง
+- เมื่อพูดถึงสวนนี้ ใช้ตัวเลขจาก "ข้อมูลสวน" ด้านล่างเท่านั้น ห้ามแต่งตัวเลข ถ้าข้อมูลไม่พอให้บอกตรงๆ ว่าควรบันทึกอะไรเพิ่ม
+- เปรียบเทียบกับช่วงก่อน/ค่าอ้างอิง และชี้สาเหตุที่เป็นไปได้ (ฝน ผลัดใบ ระบบกรีด โรค ปุ๋ย ราคา)
+- เรื่องโรค ปุ๋ย สารเคมี: ให้แนวทางทั่วไป บอกให้อ่านฉลากและปรึกษาเจ้าหน้าที่ กยท. ก่อนใช้สารเคมี
+- เรื่องราคาและการเงิน: ให้ข้อมูลประกอบการตัดสินใจ ไม่ฟันธงราคาในอนาคต
+- ปิดท้ายด้วย "ควรทำต่อ" 1–3 ข้อที่ทำได้จริง เมื่อเหมาะสม
+วันนี้คือ ${today()}
+
+ข้อมูลสวน:
+${aiContext()}`;
+}
+function mdLite(s) {
+  const lines = esc(String(s || '').replace(/```json[\s\S]*?```/g, '').trim()).split('\n');
+  let html = '', inList = false;
+  lines.forEach(raw => {
+    let l = raw.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, '$1<i>$2</i>');
+    const li = l.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)$/);
+    if (li) { if (!inList) { html += '<ul>'; inList = true; } html += `<li>${li[1]}</li>`; return; }
+    if (inList) { html += '</ul>'; inList = false; }
+    const h = l.match(/^#{1,4}\s+(.*)$/);
+    if (h) html += `<div class="ai-h">${h[1]}</div>`; else if (l.trim()) html += `<p>${l}</p>`;
+  });
+  if (inList) html += '</ul>';
+  return html;
+}
+function askAi(question, image) { const st = pstate('ai', () => ({ msgs: [], img: null })); st.pending = question; if (image) st.img = image; go('ai'); }
+const AI_SUGGEST = ['สรุปสวนเดือนนี้ และควรทำอะไรต่อ', 'แปลงไหนผลผลิตต่ำกว่าปกติ เพราะอะไรได้บ้าง', 'ค่าใช้จ่ายอะไรเพิ่มขึ้นผิดปกติ', 'ช่วงปิดกรีดปีหน้าควรเตรียมเงินเท่าไร', 'ราคายางช่วงนี้เป็นอย่างไร ควรพิจารณาอะไรก่อนขาย', 'ถ้าจะเพิ่มผลผลิตต่อไร่ ควรเริ่มจากอะไร'];
+ROUTES.ai = {
+  title: 'ผู้ช่วย AI ประจำสวน',
+  render(main) {
+    const st = pstate('ai', () => ({ msgs: [], img: null }));
+    if (!S().scriptUrl) { main.innerHTML = `<div class="alert">${ic('alert')}<div class="small">ต้องเชื่อมต่อ Google Sheets ก่อน จึงจะใช้ผู้ช่วย AI ได้ <button class="lk" data-go="settings">ไปที่ตั้งค่า</button></div></div>`; return; }
+    const draw = () => {
+      main.innerHTML = `
+        <div id="aiStatus" class="xs faint" style="margin-bottom:6px"></div>
+        <div id="aiMsgs">${st.msgs.length ? st.msgs.map((m, i) => `<div class="ai-msg ${m.role}">${m.img ? `<img src="${m.img}" class="ai-img" alt="">` : ''}${m.role === 'user' ? `<p>${esc(m.text)}</p>` : mdLite(m.text)}${m.diag ? `<button class="btn sm" data-diag="${i}" style="margin-top:6px">${ic('health')} บันทึกเป็นปัญหาสุขภาพต้น</button>` : ''}</div>`).join('') : `<div class="card"><h3>${ic('bot')} ถามเรื่องสวนได้เลย</h3><div class="small muted">ผู้ช่วยจะดูจากข้อมูลที่บันทึกในแอพ (ผลผลิต ราคา ค่าใช้จ่าย ฝน รอบกรีด) และถ่ายรูปใบ/หน้ากรีดให้ช่วยดูอาการได้</div><div class="chips" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${AI_SUGGEST.map(q => `<button class="btn sm" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`}</div>
+        ${st.busy ? `<div class="ai-msg model"><p class="muted">กำลังคิด...</p></div>` : ''}
+        <div class="card ai-compose">${st.img ? `<div class="row" style="margin-bottom:6px"><img src="${st.img}" class="ai-img" alt=""><span class="small muted" style="margin-left:8px">รูปสำหรับให้ AI ดูอาการ</span><span class="sp"></span><button class="btn sm" id="aiRmImg">${ic('x')}</button></div>` : ''}
+          <textarea class="inp" id="aiQ" rows="2" placeholder="${st.img ? 'เช่น ใบเป็นจุดแบบนี้คือโรคอะไร' : 'พิมพ์คำถาม เช่น เดือนนี้ขาดทุนเพราะอะไร'}"></textarea>
+          <div class="row" style="margin-top:8px"><label class="btn sm">${ic('camera')} รูป<input type="file" accept="image/*" capture="environment" id="aiFile" style="display:none"></label>${st.msgs.length ? `<button class="btn sm" id="aiClear">เริ่มใหม่</button>` : ''}<span class="sp"></span><button class="btn pri" id="aiSend" ${st.busy ? 'disabled' : ''}>${ic('check')} ถาม</button></div>
+          <div class="hint">${S().aiAnon !== false ? 'ส่งข้อมูลสรุปของสวน (ไม่มีชื่อคนงาน)' : 'ส่งข้อมูลสรุปของสวน'} ไปประมวลผลที่ Google Gemini · คำตอบอาจผิดพลาดได้ ควรตรวจสอบก่อนตัดสินใจ</div></div>`;
+      const send = async (q) => {
+        q = (q ?? $('#aiQ', main).value).trim(); if (!q && !st.img) return;
+        const img = st.img; const isDiag = !!img;
+        const prompt = isDiag ? `${q || 'ช่วยดูอาการในรูปนี้'}\n\nวิเคราะห์รูปต้นยาง/ใบ/หน้ากรีดนี้: บอกอาการที่เห็น ปัญหาที่เป็นไปได้ (เรียงจากน่าจะเป็นมากสุด) สิ่งที่ควรตรวจเพิ่ม และแนวทางจัดการเบื้องต้น ถ้ารูปไม่ชัดให้บอก\nรายการปัญหาที่ใช้ในแอพ: ${HEALTH_ISSUES.join(', ')}\nบรรทัดสุดท้ายให้ใส่บล็อก \`\`\`json {"issue":"<ชื่อจากรายการ หรือ ไม่แน่ใจ>","severity":"low|mid|high"} \`\`\`` : q;
+        const history = st.msgs.slice(-6).map(m => ({ role: m.role, text: m.text }));
+        st.msgs.push({ role: 'user', text: q || 'ช่วยดูอาการในรูปนี้', img }); st.img = null; st.busy = true; draw(); window.scrollTo(0, document.body.scrollHeight);
+        try {
+          const r = await api('ai.ask', { prompt, system: aiSystem(), history, image: img });
+          const m = { role: 'model', text: r.text };
+          const jm = r.text.match(/```json\s*([\s\S]*?)```/); if (isDiag && jm) { try { const j = JSON.parse(jm[1]); if (j.issue && HEALTH_ISSUES.includes(j.issue)) m.diag = { issue: j.issue, severity: ['low', 'mid', 'high'].includes(j.severity) ? j.severity : 'low', img }; } catch (e) { } }
+          st.msgs.push(m); st.usage = `ใช้วันนี้ ${r.used}/${r.limit} ครั้ง · ${r.model}`;
+        } catch (e) { st.msgs.push({ role: 'model', text: '⚠️ ' + e.message }); }
+        st.busy = false; draw(); window.scrollTo(0, document.body.scrollHeight);
+      };
+      $('#aiSend', main).onclick = () => send();
+      $('#aiQ', main).addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send(); });
+      $$('[data-q]', main).forEach(b => b.onclick = () => send(b.dataset.q));
+      $('#aiFile', main).onchange = async e => { const f = e.target.files[0]; if (!f) return; try { st.img = await compressImage(f, 350000, 1024); draw(); } catch (x) { toast('อ่านรูปไม่ได้', 'err'); } };
+      const rm = $('#aiRmImg', main); if (rm) rm.onclick = () => { st.img = null; draw(); };
+      const cl = $('#aiClear', main); if (cl) cl.onclick = () => { st.msgs = []; draw(); };
+      $$('[data-diag]', main).forEach(b => b.onclick = async () => {
+        const m = st.msgs[+b.dataset.diag]; const preset = { issue: m.diag.issue, severity: m.diag.severity, symptom: m.text.replace(/```json[\s\S]*?```/g, '').replace(/\*\*/g, '').trim().slice(0, 500) };
+        if (m.diag.img) { try { preset.photos = [await addLocalPhoto(m.diag.img)]; } catch (e) { } }
+        openForm('health', null, preset);
+      });
+      const sEl = $('#aiStatus', main); if (sEl) sEl.textContent = st.usage || '';
+      if (st.pending && !st.busy) { const q = st.pending; st.pending = null; send(q); }
+    };
+    draw();
+    if (!st.usage) api('ai.status').then(r => { if (!r.enabled) { const el = $('#aiMsgs'); if (el) el.insertAdjacentHTML('afterbegin', `<div class="alert">${ic('alert')}<div class="small">ยังไม่ได้เปิดใช้ผู้ช่วย AI — ${role() === 'owner' ? 'ตั้งค่า API key ได้ที่ <button class="lk" data-go="settings">ตั้งค่า → ผู้ช่วย AI</button>' : 'ให้เจ้าของสวนตั้งค่าก่อน'}</div></div>`); } else { st.usage = `ใช้วันนี้ ${r.used}/${r.limit} ครั้ง`; const el = $('#aiStatus'); if (el) el.textContent = st.usage; } }).catch(() => { });
+  }
+};
+{
+  const orig = ROUTES.settings.render;
+  ROUTES.settings.render = function (main) {
+    orig(main);
+    if (!(S().scriptUrl && role() === 'owner')) return;
+    const card = document.createElement('div'); card.className = 'card'; card.id = 'aiCard';
+    card.innerHTML = `<h3>${ic('bot')} ผู้ช่วย AI (Google Gemini)</h3><div class="small muted">กำลังโหลด...</div>`;
+    const auto = $('#autoCard', main); if (auto) auto.after(card); else main.appendChild(card);
+    const drawAi = cfg => {
+      card.innerHTML = `<h3>${ic('bot')} ผู้ช่วย AI (Google Gemini)</h3>
+        <div class="${cfg.hasAiKey ? 'alert ok' : 'alert'}" style="margin-bottom:8px">${ic(cfg.hasAiKey ? 'check' : 'info')}<div class="small">${cfg.hasAiKey ? 'เปิดใช้งานแล้ว (API key เก็บในสคริปต์ของคุณ ไม่แสดงในแอพ)' : 'วิธีเปิดใช้: 1) เปิด <b>aistudio.google.com/apikey</b> ด้วยบัญชี Google 2) กด Create API key 3) คัดลอกมาวางด้านล่าง แล้วกดบันทึก (แผนฟรีมีจำนวนครั้งจำกัดต่อวัน)'}</div></div>
+        <div class="fields">
+          <div class="field"><label class="fl">API key</label><input class="inp" id="aiKey" type="password" autocomplete="off" placeholder="${cfg.hasAiKey ? 'ตั้งไว้แล้ว — วางใหม่เพื่อเปลี่ยน' : 'วาง API key ที่นี่'}"></div>
+          <div class="field half"><label class="fl">โมเดล</label><select class="inp" id="aiModel">${[['gemini-flash-latest', 'Gemini Flash ล่าสุด (แนะนำ)'], ['gemini-2.5-flash', 'Gemini 2.5 Flash'], ['gemini-flash-lite-latest', 'Gemini Flash-Lite (เร็ว/ประหยัด)']].map(([k, l]) => `<option value="${k}"${cfg.aiModel === k ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+          <div class="field half"><label class="fl">จำกัดต่อวัน</label><div class="inp-wrap"><input class="inp has-suf" id="aiLimit" type="number" inputmode="numeric" value="${esc(cfg.aiDailyLimit)}"><span class="suf">ครั้ง</span></div></div>
+        </div>
+        <label class="switch"><input type="checkbox" id="aiAnon"${S().aiAnon !== false ? ' checked' : ''}> <span>ไม่ส่งชื่อคนงานให้ AI (ใช้ “คนงาน1, 2…” แทน)</span></label>
+        <div class="hint">ข้อมูลสรุปของสวนจะถูกส่งไป Google เพื่อสร้างคำตอบ · แผนฟรีของ Gemini API ระบุว่า Google อาจนำข้อมูลไปใช้ปรับปรุงบริการ อย่าพิมพ์ข้อมูลส่วนตัวที่อ่อนไหว</div>
+        <div class="row wrap" style="margin-top:8px"><button class="btn sm pri" id="aiSave">${ic('check')} บันทึก</button>${cfg.hasAiKey ? `<button class="btn sm danger" id="aiDel">ลบ API key</button>` : ''}</div>`;
+      $('#aiAnon', card).onchange = e => setS({ aiAnon: e.target.checked });
+      $('#aiSave', card).onclick = async e => {
+        const b = e.target; b.disabled = true;
+        const c = { aiModel: $('#aiModel', card).value, aiDailyLimit: Math.max(1, num($('#aiLimit', card).value) || 60) }; const k = $('#aiKey', card).value.trim(); if (k) c.geminiKey = k;
+        try { const r = await api('config.save', { config: c }); toast('บันทึกแล้ว', 'ok'); drawAi(r.config); } catch (x) { toast(x.message, 'err'); b.disabled = false; }
+      };
+      const del = $('#aiDel', card); if (del) del.onclick = async () => { if (!(await confirmBox('ลบ API key และปิดผู้ช่วย AI?', 'ลบ'))) return; try { drawAi((await api('config.save', { config: { geminiKey: '' } })).config); } catch (x) { toast(x.message, 'err'); } };
+    };
+    api('config.get').then(r => drawAi(r.config)).catch(e => { card.innerHTML = `<h3>${ic('bot')} ผู้ช่วย AI</h3><div class="small muted">โหลดไม่ได้: ${esc(e.message)}</div>`; });
+  };
+}
+{
+  const orig = ROUTES.home.render;
+  ROUTES.home.render = function (main) {
+    orig(main);
+    const vb = $('.card.hero [data-go="voice"]', main);
+    if (vb && S().scriptUrl) vb.insertAdjacentHTML('afterend', ` <button class="btn sm" data-go="ai" style="margin-top:10px;background:rgba(255,255,255,.16);color:#fff;border-color:transparent">${ic('bot')} ถามผู้ช่วย AI</button>`);
+    if (S().simple) { const g = $('.big-grid', main); if (g && S().scriptUrl) g.insertAdjacentHTML('beforeend', `<button class="big-btn" data-go="ai"><span>🤖</span>ถาม AI</button><button class="big-btn" data-go="forecast"><span>📈</span>เงินปีหน้า</button>`); }
+  };
+  const origReports = reportsExtra;
+  reportsExtra = function (main) {
+    origReports(main);
+    if (!S().scriptUrl) return;
+    main.insertAdjacentHTML('afterbegin', `<div class="row wrap" style="margin-bottom:10px"><button class="btn sm" id="repAi">${ic('bot')} ให้ AI สรุปและแนะนำ</button><button class="btn sm" data-go="forecast">${ic('fc')} พยากรณ์เงินสด</button></div>`);
+    $('#repAi', main).onclick = () => askAi('สรุปผลการดำเนินงานของสวนจากรายงาน เทียบกับเดือน/ปีก่อน ชี้จุดที่ดีและจุดที่ต้องแก้ พร้อมคำแนะนำที่ทำได้จริง');
+  };
+  const oh = ROUTES.health.render;
+  ROUTES.health.render = function (main, ...a) {
+    oh(main, ...a);
+    if (S().scriptUrl && canEdit()) main.insertAdjacentHTML('afterbegin', `<div class="card row"><span class="small">${ic('bot')} ถ่ายรูปใบ/หน้ากรีดให้ AI ช่วยดูอาการ</span><span class="sp"></span><label class="btn sm pri">${ic('camera')} ถ่ายรูป<input type="file" accept="image/*" capture="environment" id="hAiFile" style="display:none"></label></div>`);
+    const fi = $('#hAiFile', main); if (fi) fi.onchange = async () => { const f = fi.files[0]; if (!f) return; try { const img = await compressImage(f, 350000, 1024); const st = pstate('ai', () => ({ msgs: [] })); st.img = img; st.pending = 'ช่วยดูอาการในรูปนี้ว่าเป็นโรคหรือปัญหาอะไร'; go('ai'); } catch (e) { toast('อ่านรูปไม่ได้', 'err'); } };
   };
 }
 </script>
