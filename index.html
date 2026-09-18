@@ -43,14 +43,14 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.5;min-height:100vh;overscroll-behavior-y:contain}
+body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:var(--fs,15px);line-height:1.5;min-height:100vh;overscroll-behavior-y:contain}
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--pri)}
 svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;vertical-align:middle}
 .num,.tnum{font-variant-numeric:tabular-nums}
 
 /* top bar */
-.top{position:sticky;top:0;z-index:30;background:var(--pri);color:#fff;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;display:flex;align-items:center;gap:8px}
+.top{position:sticky;top:0;z-index:30;background:var(--top-bg,var(--pri));color:#fff;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;display:flex;align-items:center;gap:8px}
 :root[data-theme="dark"] .top{background:#0f2a20}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .top{background:#0f2a20}}
 .top .back{background:none;border:0;color:#fff;padding:6px;margin-left:-6px;border-radius:10px;display:none}
@@ -96,7 +96,7 @@ main{max-width:760px;margin:0 auto;padding:12px 12px calc(var(--nav-h) + 90px + 
 .kpi .l svg{width:15px;height:15px}
 .kpi .v{font-size:21px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 .kpi .s{font-size:12px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hero{background:linear-gradient(135deg,#065f46,#047857 55%,#0d9488);color:#fff;border:0}
+.hero{background:var(--hero-bg,linear-gradient(135deg,#065f46,#047857 55%,#0d9488));color:#fff;border:0;position:relative;overflow:hidden}
 .hero .muted,.hero .faint{color:rgba(255,255,255,.8)}
 
 /* list items */
@@ -320,6 +320,159 @@ body.portal #main{padding-bottom:24px}
 .ai-h{font-weight:700;margin:8px 0 2px}
 .ai-img{max-width:120px;max-height:120px;border-radius:10px;display:block;margin-bottom:6px}
 .lotdoc{font-size:14px;line-height:1.5}.lotdoc .tbl td,.lotdoc .tbl th{color:#111;background:#fff;border:1px solid #ddd;font-size:12px}
+
+/* ===== v3.1 look & feel ===== */
+/* palette picker */
+.pal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media (min-width:520px){.pal-grid{grid-template-columns:repeat(6,1fr)}}
+.pal{background:var(--card2);border:1.5px solid var(--line);border-radius:14px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;color:var(--ink2);cursor:pointer}
+.pal i{width:34px;height:34px;border-radius:50%;display:block;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+.pal.on{border-color:var(--pri);color:var(--pri);font-weight:600;box-shadow:0 0 0 3px var(--pri-soft)}
+.look-demo{margin-top:12px;background:var(--bg);border-radius:14px;padding:10px}
+.look-demo .ic-demo{width:38px;height:38px;border-radius:12px;background:var(--pri-soft);color:var(--pri);display:inline-flex;align-items:center;justify-content:center;margin-right:8px}
+/* hero today + week strip */
+.hero.mood-rain::after,.hero.mood-sun::after,.hero.mood-night::after,.hero.mood-leaf::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5}
+.hero.mood-sun::after{background:radial-gradient(120px 90px at 88% -10%,rgba(253,224,71,.55),transparent 70%)}
+.hero.mood-rain::after{background:radial-gradient(150px 110px at 85% -20%,rgba(148,197,255,.45),transparent 70%),repeating-linear-gradient(105deg,rgba(255,255,255,.09) 0 1px,transparent 1px 9px)}
+.hero.mood-night::after{background:radial-gradient(90px 70px at 86% -5%,rgba(226,232,240,.4),transparent 70%);opacity:.7}
+.hero.mood-leaf::after{background:radial-gradient(130px 100px at 90% -15%,rgba(251,191,36,.4),transparent 70%)}
+.hero-today{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;position:relative;z-index:1}
+.hero-today>div{background:rgba(255,255,255,.14);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;min-width:0}
+.hero-today .hl{font-size:11px;opacity:.85}
+.hero-today b{font-size:18px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero-today .hs{font-size:11px;opacity:.75}
+.week{display:flex;gap:6px;margin-top:10px;position:relative;z-index:1}
+.week .wd{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,.1);border-radius:10px;padding:6px 2px 4px;font-size:10px}
+.week .wd i{display:block;width:60%;background:rgba(255,255,255,.85);border-radius:3px;min-height:3px}
+.week .wd span{opacity:.85}
+.week .wd u{text-decoration:none;font-size:10px;line-height:1;min-height:10px}
+.week .wd.on{background:rgba(255,255,255,.26);font-weight:700}
+/* donut */
+.donut-wrap{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.donut{flex-shrink:0;margin:0 auto}
+.donut .dt{font-size:17px;font-weight:700;fill:var(--ink)}
+.donut .ds{font-size:11px;fill:var(--ink3)}
+.donut-legend{flex:1;min-width:190px;font-size:13px}
+.donut-legend .row{padding:3px 0;gap:8px;align-items:center}
+.donut-legend i{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+/* motion */
+.ripple{position:absolute;border-radius:50%;background:currentColor;opacity:.16;transform:scale(0);animation:rip .55s ease-out forwards;pointer-events:none}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+.reveal{animation:rise .34s cubic-bezier(.2,.7,.3,1) both;animation-delay:var(--d,0ms)}
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.btn:active,.item:active,.quick button:active,.menu-grid button:active,.big-btn:active{transform:scale(.975)}
+.btn,.item,.quick button,.menu-grid button,.big-btn{transition:transform .12s ease,box-shadow .15s ease,background .15s ease}
+.chart.grow rect{animation:growb .5s cubic-bezier(.2,.8,.3,1) both;transform-box:fill-box;transform-origin:bottom}
+@keyframes growb{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.celebrate{position:fixed;left:50%;top:38%;z-index:120;pointer-events:none}
+.celebrate span{position:absolute;animation:burst 1.2s ease-out var(--t,0s) forwards;opacity:0}
+@keyframes burst{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(calc(var(--x) * 130px),-150px) rotate(var(--r))}}
+.skel{background:linear-gradient(100deg,var(--card2) 30%,var(--line) 50%,var(--card2) 70%);background-size:220% 100%;animation:shine 1.2s infinite;border-radius:10px}
+@keyframes shine{to{background-position:-180% 0}}
+body.nomotion *,body.nomotion *::before,body.nomotion *::after{animation-duration:.001ms!important;animation-delay:0ms!important;transition-duration:.001ms!important}
+body.nomotion .ripple,body.nomotion .celebrate{display:none}
+/* high contrast */
+body.hc{--line:#9aa8a1;--ink2:#2b3a33;--ink3:#44544c}
+body.hc .card,body.hc .item,body.hc .kpi,body.hc .inp{border-width:1.6px}
+body.hc .item .t,body.hc .kpi .v,body.hc .sec-title{font-weight:700}
+body.hc .small,body.hc .xs,body.hc .d,body.hc .hint{font-weight:500}
+:root[data-theme="dark"] body.hc,body.hc:is([data-theme="dark"] *){--line:#3c5148;--ink2:#cfdcd6;--ink3:#a9b8b1}
+
+/* v3.2 */
+.more-btn{width:100%;margin:8px 0 4px}
+.card,.list>.item{contain-intrinsic-size:auto 64px}
+
+/* v3.2 — วิเคราะห์กำไร + ความปลอดภัยข้อมูล */
+.dotc{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:middle}
+.rng{width:100%;accent-color:var(--pri);height:28px}
+.seg.col{flex-direction:column;align-items:stretch;gap:2px}
+.seg.col label{justify-content:flex-start;text-align:left;padding:9px 10px}
+#wOut .kpi{padding:10px}
+.tbl td a{color:var(--pri2);text-decoration:none}
+
+/* ===== v3.3 งานออกแบบรอบสอง ===== */
+/* แถบ 7 วัน */
+.wkbox{margin-top:12px;background:rgba(255,255,255,.12);border-radius:14px;padding:10px 12px 8px}
+.wkh{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:rgba(255,255,255,.85);margin-bottom:6px}
+.wkh b{font-size:14px;color:#fff}
+.wkbox .week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:0}
+.wkbox .week .wd{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;padding:0}
+.wkbox .week .wd .vbox{display:flex;align-items:center;justify-content:center;width:100%;max-width:34px;height:26px;background:rgba(255,255,255,.14);border-radius:7px}
+.wkbox .week .wd .vbox b{font-size:11.5px;color:#fff;font-weight:700}
+.wkbox .week .wd .vbox u{text-decoration:none;color:rgba(255,255,255,.5)}
+.wkbox .week .wd.on .vbox{background:rgba(255,255,255,.3)}
+.wkbox .week .wd .trk{display:flex;align-items:flex-end;justify-content:center;width:100%;max-width:26px;height:32px;background:rgba(255,255,255,.14);border-radius:6px;opacity:1}
+.wkbox .week .wd .trk i{display:block;width:100%;border-radius:5px;background:rgba(255,255,255,.6);min-height:0}
+.wkbox .week .wd.on .trk{background:rgba(255,255,255,.26)}
+.wkbox .week .wd.on .trk i{background:#fff}
+.wkbox .week .wd .dw{font-size:11px;color:rgba(255,255,255,.85);opacity:1}
+.wkbox .week .wd.on .dw{color:#fff;font-weight:700}
+.wkbox .week .wd em{width:5px;height:5px;border-radius:50%;background:transparent}
+.wkbox .week .wd em.tap{background:#bbf7d0}
+.wkbox .week .wd em.skip{background:#fde68a}
+.wkl{display:flex;gap:14px;justify-content:center;margin-top:6px;font-size:10.5px;color:rgba(255,255,255,.8)}
+.wkl span{display:flex;align-items:center;gap:4px}
+.wkl em{width:5px;height:5px;border-radius:50%;display:inline-block}
+.wkl em.tap{background:#bbf7d0}.wkl em.skip{background:#fde68a}
+
+/* แถบควบคุมหน้ารายการ */
+.lbar{margin-bottom:10px}
+.lbar .mnav{margin-bottom:0}
+.filters{margin-top:8px}
+.filters>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 12px}
+.filters>summary::-webkit-details-marker{display:none}
+.filters>summary svg{width:16px;height:16px;flex-shrink:0}
+.filters>summary span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filters>summary .dot{width:7px;height:7px;border-radius:50%;background:var(--pri);flex-shrink:0}
+.filters[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom-color:transparent}
+.filters-in{background:var(--card);border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;padding:10px 12px 4px}
+.filters-in .seg{margin-bottom:8px}
+.filters-in .search{margin-bottom:8px}
+.filters-in .chips{padding-bottom:6px}
+.sumbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));overflow:visible}
+.sumbar .s{flex-shrink:1;min-width:0}
+.sumbar .s .v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* รายการ: ให้บรรทัดรองขึ้นได้ 2 บรรทัด และเว้นที่ให้ปุ่มลอย */
+.item .d{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.list:last-of-type{margin-bottom:8px}
+
+/* วันที่แบบไทย */
+.dwrap{position:relative;display:block}
+.dwrap input[type=date]{color:transparent}
+.dwrap input[type=date]::-webkit-datetime-edit{color:transparent}
+.dlabel{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-weight:600;white-space:nowrap;overflow:hidden;max-width:calc(100% - 46px)}
+.dwrap.empty .dlabel{font-weight:400;color:var(--ink3)}
+.dquick{display:flex;gap:6px;margin-top:6px}
+.dquick button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:6px 4px;font-size:12px;color:var(--ink2);cursor:pointer}
+.dquick button:active{background:var(--pri-soft);color:var(--pri)}
+
+/* หัวข้อปุ่มลัดหน้าหลัก */
+.qhead{margin-top:2px}
+
+/* ตารางกว้าง → การ์ดบนจอแคบ */
+table.tbl .lb{display:none}
+@media (max-width:560px){
+  table.tbl.stackable,table.tbl.stackable tbody{display:block}
+  table.tbl.stackable tr{display:block;border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;background:var(--card2)}
+  table.tbl.stackable tr:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;padding:0;margin:-1px;border:0}
+  table.tbl.stackable td{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border:0;padding:3px 0;text-align:right}
+  table.tbl.stackable td:first-child{font-weight:700;font-size:15px;text-align:left;display:block;padding-bottom:6px;margin-bottom:4px;border-bottom:1px dashed var(--line)}
+  table.tbl.stackable td .lb{display:block;font-size:12px;color:var(--ink2);font-weight:400;text-align:left;flex:1}
+  table.tbl.stackable td.n{text-align:right}
+  .tbl-wrap:has(table.stackable){overflow:visible}
+}
+/* ฟอร์ม: ซ่อนลูกศรเพิ่ม-ลดของช่องตัวเลข และตรึงกล่องสรุปผลคำนวณ */
+.inp[type=number]::-webkit-outer-spin-button,.inp[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.inp[type=number]{-moz-appearance:textfield;appearance:textfield}
+.sheet>.pv-dock{border-top:1px solid var(--line);background:var(--card);max-height:30vh;overflow:auto;padding:10px 16px 0;flex-shrink:0}
+.sheet>.pv-dock:empty{display:none;padding:0;border:0}
+.sheet>.pv-dock .preview{margin:0 0 10px}
+/* ข้อความแจ้งเตือนอย่าบังฟอร์มที่กำลังกรอก */
+body:has(.overlay) .toasts{bottom:auto;top:calc(env(safe-area-inset-top) + 64px);flex-direction:column}
+/* ชื่อรายการและตัวเลขสรุป: ให้ขึ้นบรรทัดใหม่แทนการตัดคำทิ้ง */
+.item .t{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sumbar .s .v{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}
 </style>
 </head>
 <body>
@@ -329,7 +482,7 @@ body.portal #main{padding-bottom:24px}
 /* =========================================================
    สวนยางพารา — แอพบริหารจัดการสวนยาง (Offline-first PWA)
    ========================================================= */
-const APP_VERSION = '3.0.0';
+const APP_VERSION = '3.3.0';
 // ▼ ใส่ URL ของ Apps Script และรหัส API ตรงนี้ เพื่อให้ทุกเครื่องตั้งค่าอัตโนมัติ (ไม่บังคับ)
 const EMBED = { scriptUrl: '', apiKey: '' };
 
@@ -340,7 +493,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const num = v => { if (typeof v === 'number') return isFinite(v) ? v : 0; const n = parseFloat(String(v ?? '').replace(/,/g, '')); return isFinite(n) ? n : 0; };
 const r2 = n => Math.round((num(n) + Number.EPSILON) * 100) / 100;
-const fmt = (n, d = 2) => num(n).toLocaleString('th-TH', { maximumFractionDigits: d });
+const fmt = (n, d = 2) => { const v = num(n); return (v === 0 ? 0 : v).toLocaleString('th-TH', { maximumFractionDigits: d }); };
 const baht = (n, d = 0) => (num(n) < 0 ? '-' : '') + '฿' + Math.abs(num(n)).toLocaleString('th-TH', { maximumFractionDigits: Math.abs(num(n)) < 1000 ? 2 : d });
 const bahtS = n => { const a = Math.abs(num(n)); const s = num(n) < 0 ? '-' : ''; if (a >= 1e6) return s + '฿' + fmt(a / 1e6, 2) + 'ล.'; if (a >= 1e5) return s + '฿' + fmt(a / 1e3, 1) + 'k'; return s + '฿' + fmt(a, 0); };
 const sum = (arr, f) => arr.reduce((s, x) => s + num(typeof f === 'function' ? f(x) : x[f]), 0);
@@ -3978,6 +4131,1390 @@ ROUTES.ai = {
     const fi = $('#hAiFile', main); if (fi) fi.onchange = async () => { const f = fi.files[0]; if (!f) return; try { const img = await compressImage(f, 350000, 1024); const st = pstate('ai', () => ({ msgs: [] })); st.img = img; st.pending = 'ช่วยดูอาการในรูปนี้ว่าเป็นโรคหรือปัญหาอะไร'; go('ai'); } catch (e) { toast('อ่านรูปไม่ได้', 'err'); } };
   };
 }
+/* =========================================================
+   v3.1 — หน้าตา: ชุดสี, โหมดมืด/ดำสนิท, ขนาดตัวอักษร, ลูกเล่นการใช้งาน
+   ========================================================= */
+const PALETTES = {
+  green: { n: 'เขียวยาง', emoji: '🌳', pri: '#047857', pri2: '#059669', soft: '#d1fae5', softInk: '#064e3b', top: '#047857', hero: 'linear-gradient(135deg,#065f46,#047857 55%,#0d9488)', dPri: '#10b981', dPri2: '#34d399', dSoft: '#0f3a2c', dSoftInk: '#a7f3d0', dTop: '#0f2a20', dHero: 'linear-gradient(135deg,#064e3b,#065f46 60%,#115e59)', bg: '#f3f6f4', line: '#e2e8e4', ink: '#14201a' },
+  indigo: { n: 'น้ำเงินคราม', emoji: '💙', pri: '#1d4ed8', pri2: '#2563eb', soft: '#dbeafe', softInk: '#1e3a8a', top: '#1d4ed8', hero: 'linear-gradient(135deg,#1e3a8a,#1d4ed8 55%,#0891b2)', dPri: '#60a5fa', dPri2: '#93c5fd', dSoft: '#16294d', dSoftInk: '#bfdbfe', dTop: '#13224a', dHero: 'linear-gradient(135deg,#172554,#1e3a8a 60%,#155e75)', bg: '#f2f5fa', line: '#e0e6ef', ink: '#141b26' },
+  clay: { n: 'ดินแดงอีสาน', emoji: '🧡', pri: '#c2410c', pri2: '#ea580c', soft: '#ffedd5', softInk: '#7c2d12', top: '#c2410c', hero: 'linear-gradient(135deg,#7c2d12,#c2410c 55%,#d97706)', dPri: '#fb923c', dPri2: '#fdba74', dSoft: '#42210f', dSoftInk: '#fed7aa', dTop: '#3a1d0c', dHero: 'linear-gradient(135deg,#431407,#7c2d12 60%,#78350f)', bg: '#faf5f1', line: '#eee2d8', ink: '#22160f' },
+  teal: { n: 'ฟ้าน้ำทะเล', emoji: '🩵', pri: '#0e7490', pri2: '#0891b2', soft: '#cffafe', softInk: '#164e63', top: '#0e7490', hero: 'linear-gradient(135deg,#164e63,#0e7490 55%,#0d9488)', dPri: '#22d3ee', dPri2: '#67e8f9', dSoft: '#0c3540', dSoftInk: '#a5f3fc', dTop: '#0b2c36', dHero: 'linear-gradient(135deg,#083344,#155e75 60%,#134e4a)', bg: '#f1f7f9', line: '#dfebee', ink: '#0f1e22' },
+  violet: { n: 'ม่วงมังคุด', emoji: '💜', pri: '#6d28d9', pri2: '#7c3aed', soft: '#ede9fe', softInk: '#4c1d95', top: '#6d28d9', hero: 'linear-gradient(135deg,#4c1d95,#6d28d9 55%,#9333ea)', dPri: '#a78bfa', dPri2: '#c4b5fd', dSoft: '#2a1f4d', dSoftInk: '#ddd6fe', dTop: '#241a45', dHero: 'linear-gradient(135deg,#2e1065,#4c1d95 60%,#581c87)', bg: '#f6f4fb', line: '#e7e3f2', ink: '#1a1526' },
+  amber: { n: 'ทองรวงข้าว', emoji: '💛', pri: '#a16207', pri2: '#ca8a04', soft: '#fef3c7', softInk: '#713f12', top: '#a16207', hero: 'linear-gradient(135deg,#713f12,#a16207 55%,#65a30d)', dPri: '#fbbf24', dPri2: '#fcd34d', dSoft: '#3d2f0a', dSoftInk: '#fde68a', dTop: '#33270a', dHero: 'linear-gradient(135deg,#422006,#713f12 60%,#365314)', bg: '#faf8f1', line: '#ece6d6', ink: '#1f1a0e' },
+};
+const FONT_SCALES = [['s', 'เล็ก', 14], ['m', 'ปกติ', 15], ['l', 'ใหญ่', 17], ['xl', 'ใหญ่มาก', 19]];
+const THEME_MODES = [['auto', 'ตามเครื่อง'], ['light', 'สว่าง'], ['dark', 'มืด'], ['black', 'ดำสนิท']];
+const pal = () => PALETTES[S().palette] || PALETTES.green;
+const motionOn = () => S().motion !== false && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+const buzz = ms => { try { if (S().haptic !== false && navigator.vibrate && (navigator.userActivation ? navigator.userActivation.hasBeenActive : true)) navigator.vibrate(ms); } catch (e) { } };
+applyTheme = function () {
+  const s = S(); const p = pal(); const root = document.documentElement;
+  const mode = s.theme || 'auto';
+  const dark = mode === 'dark' || mode === 'black' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  root.setAttribute('data-theme', dark ? 'dark' : mode === 'auto' ? 'auto' : 'light');
+  if (mode === 'auto' && !dark) root.removeAttribute('data-theme');
+  const v = {
+    '--pri': dark ? p.dPri : p.pri, '--pri2': dark ? p.dPri2 : p.pri2,
+    '--pri-soft': dark ? p.dSoft : p.soft, '--pri-ink': dark ? p.dSoftInk : p.softInk,
+    '--hero-bg': dark ? p.dHero : p.hero, '--top-bg': dark ? p.dTop : p.top,
+    '--fs': (FONT_SCALES.find(f => f[0] === (s.fontScale || 'm')) || FONT_SCALES[1])[2] + 'px',
+  };
+  if (!dark) Object.assign(v, { '--bg': p.bg, '--line': p.line, '--ink': p.ink });
+  if (mode === 'black') Object.assign(v, { '--bg': '#000', '--card': '#0b0b0b', '--card2': '#121212', '--line': '#262626', '--ink': '#f3f4f6', '--ink2': '#b8bdba', '--ink3': '#8a908c' });
+  ['--bg', '--line', '--ink', '--card', '--card2', '--ink2', '--ink3'].forEach(k => { if (!(k in v)) root.style.removeProperty(k); });
+  Object.entries(v).forEach(([k, val]) => root.style.setProperty(k, val));
+  document.body.classList.toggle('hc', !!s.contrast);
+  document.body.classList.toggle('nomotion', !motionOn());
+  $('meta[name=theme-color]')?.setAttribute('content', mode === 'black' ? '#000000' : dark ? p.dTop : p.top);
+};
+
+/* ---------------- micro-interactions ---------------- */
+document.addEventListener('pointerdown', e => {
+  if (!motionOn()) return;
+  const el = e.target.closest('.btn, .item, .quick button, .menu-grid button, .big-btn, .nav button, .fab');
+  if (!el || el.disabled) return;
+  const r = el.getBoundingClientRect(); const d = Math.max(r.width, r.height);
+  const s = document.createElement('span'); s.className = 'ripple';
+  s.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`;
+  if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+  el.appendChild(s); setTimeout(() => s.remove(), 600);
+}, { passive: true });
+function countUp(el) {
+  const txt = el.textContent; const m = txt.match(/-?[\d,]+(?:\.\d+)?/);
+  if (!m || !motionOn()) return;
+  const target = num(m[0]); if (!isFinite(target) || Math.abs(target) < 10) return;
+  const dec = (m[0].split('.')[1] || '').length; const t0 = performance.now(); const dur = 650;
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3);
+    el.textContent = txt.replace(m[0], (target * e).toLocaleString('th-TH', { minimumFractionDigits: dec, maximumFractionDigits: dec }));
+    if (k < 1) requestAnimationFrame(step); else el.textContent = txt;
+  };
+  requestAnimationFrame(step);
+}
+function polishMain(main) {
+  if (!motionOn()) return;
+  [...main.children].slice(0, 14).forEach((el, i) => { el.style.setProperty('--d', (i * 35) + 'ms'); el.classList.add('reveal'); });
+  $$('.kpi .v, .hero .tnum, .simple-kpi b', main).slice(0, 12).forEach(countUp);
+}
+function celebrate(emoji = '🎉') {
+  if (!motionOn()) return;
+  const box = document.createElement('div'); box.className = 'celebrate';
+  for (let i = 0; i < 14; i++) {
+    const s = document.createElement('span'); s.textContent = emoji;
+    s.style.cssText = `--x:${(Math.random() * 2 - 1).toFixed(2)};--r:${(Math.random() * 360).toFixed(0)}deg;--t:${(Math.random() * .25).toFixed(2)}s;font-size:${12 + Math.random() * 14}px`;
+    box.appendChild(s);
+  }
+  document.body.appendChild(box); setTimeout(() => box.remove(), 1600);
+}
+{
+  const origToast = toast;
+  toast = function (msg, type = '') { if (type === 'ok') buzz(18); else if (type === 'err') buzz([12, 60, 12]); return origToast(msg, type); };
+  const as = SCHEMA.sales.afterSave;
+  SCHEMA.sales.afterSave = async (s, isNew) => { if (as) await as(s, isNew); if (isNew) celebrate('💰'); };
+  const at = SCHEMA.tapping.afterSave;
+  SCHEMA.tapping.afterSave = async (s, isNew) => { if (at) await at(s, isNew); if (isNew && s.rain !== 'skip') celebrate('🌿'); };
+}
+
+/* ---------------- prettier charts ---------------- */
+{
+  const origBar = barChart;
+  barChart = function (labels, series, opt = {}) {
+    let svg = origBar(labels, series, opt);
+    const defs = series.map((s, i) => `<linearGradient id="bg${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${s.color}" stop-opacity="1"/><stop offset="100%" stop-color="${s.color}" stop-opacity=".65"/></linearGradient>`).join('');
+    series.forEach((s, i) => { svg = svg.split(`fill="${s.color}"`).join(`fill="url(#bg${i})"`); });
+    svg = svg.replace('role="img">', `role="img"><defs>${defs}</defs>`).replace(/rx="2"/g, 'rx="3.5"');
+    return svg.replace('<svg class="chart"', '<svg class="chart grow"');
+  };
+  const origLine = lineChart;
+  lineChart = function (labels, series, opt = {}) {
+    let svg = origLine(labels, series, opt);
+    if (series.length !== 1 || !svg.includes('<path')) return svg;
+    const m = svg.match(/<path d="(M[^"]+)" fill="none" stroke="([^"]+)"/);
+    const vb = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+    if (!m || !vb) return svg;
+    const H = +vb[2] - 22;
+    const area = `<defs><linearGradient id="la" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${m[2]}" stop-opacity=".28"/><stop offset="100%" stop-color="${m[2]}" stop-opacity="0"/></linearGradient></defs>`;
+    const first = m[1].match(/M([\d.]+),/), last = [...m[1].matchAll(/[ML]([\d.]+),([\d.]+)/g)].pop();
+    if (!first || !last) return svg;
+    const path = `<path d="${m[1]}L${last[1]},${H}L${first[1]},${H}Z" fill="url(#la)" stroke="none"/>`;
+    return svg.replace('role="img">', `role="img">${area}${path}`);
+  };
+}
+function donut(entries, { size = 168, thick = 26, fmtV = baht } = {}) {
+  const tot = sum(entries, e => Math.abs(num(e[1])));
+  if (!tot) return emptyBox('ไม่มีข้อมูล', 'chart');
+  const COLORS = ['var(--pri)', 'var(--blue)', 'var(--amber)', 'var(--violet)', 'var(--red)', 'var(--pri2)', '#0891b2', '#db2777'];
+  const R = size / 2, r = R - thick / 2, C = 2 * Math.PI * r;
+  let off = 0;
+  const arcs = entries.slice(0, 8).map(([l, v], i) => {
+    const frac = Math.abs(num(v)) / tot; const dash = `${(frac * C).toFixed(2)} ${(C - frac * C).toFixed(2)}`;
+    const el = `<circle cx="${R}" cy="${R}" r="${r}" fill="none" stroke="${COLORS[i % COLORS.length]}" stroke-width="${thick}" stroke-dasharray="${dash}" stroke-dashoffset="${(-off * C).toFixed(2)}" transform="rotate(-90 ${R} ${R})"><title>${esc(l)}: ${fmtV(v)} (${fmt(frac * 100, 0)}%)</title></circle>`;
+    off += frac; return el;
+  }).join('');
+  return `<div class="donut-wrap"><svg viewBox="0 0 ${size} ${size}" class="donut" width="${size}" height="${size}">${arcs}<text x="${R}" y="${R - 2}" text-anchor="middle" class="dt">${fmtV(tot)}</text><text x="${R}" y="${R + 16}" text-anchor="middle" class="ds">รวม</text></svg>
+    <div class="donut-legend">${entries.slice(0, 8).map(([l, v], i) => `<div class="row"><i style="background:${COLORS[i % COLORS.length]}"></i><span class="sp">${esc(l)}</span><b>${fmtV(v)}</b><span class="xs faint" style="width:38px;text-align:right">${fmt(Math.abs(num(v)) / tot * 100, 0)}%</span></div>`).join('')}</div></div>`;
+}
+
+/* ---------------- home: today hero + week strip ---------------- */
+function weekStrip() {
+  const days = []; const t = today();
+  for (let i = 6; i >= 0; i--) { const d = addDays(t, -i); days.push({ d, kg: sum(list('sales', s => s.date === d && inFarm(s)), estDryKg), tap: list('tapping', r => r.date === d && r.rain !== 'skip' && inFarm(r)).length, skip: list('tapping', r => r.date === d && r.rain === 'skip' && inFarm(r)).length }); }
+  const mx = Math.max(1, ...days.map(x => x.kg));
+  return `<div class="week">${days.map(x => `<div class="wd${x.d === t ? ' on' : ''}" title="${thDate(x.d)} · ขาย ${fmt(x.kg, 0)} กก.${x.tap ? ' · กรีด ' + x.tap + ' แปลง' : ''}">
+    <i style="height:${Math.max(3, x.kg / mx * 34).toFixed(0)}px"></i>
+    <span>${TH_DOW[parseD(x.d).getDay()]}</span>${x.skip && !x.tap ? '<u>🌧️</u>' : x.tap ? '<u>🌿</u>' : '<u></u>'}</div>`).join('')}</div>`;
+}
+function heroMood() {
+  const w = META.weather?.data; const hh = +nowTime().slice(0, 2);
+  const rain = w?.daily?.precipitation_sum?.[1] ?? 0;
+  const rest = restMonths().includes(+today().slice(5, 7));
+  if (rest) return 'leaf';
+  if (num(rain) >= 5) return 'rain';
+  if (hh >= 19 || hh < 5) return 'night';
+  return 'sun';
+}
+{
+  const orig = ROUTES.home.render;
+  ROUTES.home.render = function (main) {
+    orig(main);
+    const hero = $('.card.hero', main);
+    if (hero && !S().simple) {
+      hero.classList.add('mood-' + heroMood());
+      const t = today(); const P = pnl(t, t);
+      const dueN = list('plots', p => inFarm(p) && p.status === 'tapping' && tapDue(p, t).due && !list('tapping', r => r.date === t && r.plotId === p.id).length).length;
+      const owed = r2(sum(list('workers'), w => Math.max(0, workerLedger(w.id).balance)));
+      const wx = $('#wxMini', hero);
+      const html = `<div class="hero-today">
+        <div><span class="hl">ขายวันนี้</span><b class="tnum">${bahtS(P.net)}</b><span class="hs">${fmt(P.kg, 0)} กก.</span></div>
+        <div><span class="hl">ถึงรอบกรีด</span><b>${dueN}</b><span class="hs">แปลง</span></div>
+        <div><span class="hl">ค้างจ่ายคนงาน</span><b class="tnum">${bahtS(owed)}</b><span class="hs">รวมทุกคน</span></div>
+      </div>${weekStrip()}`;
+      (wx || hero).insertAdjacentHTML('afterend', html);
+      if (!META.weather && wx) wx.innerHTML = `<div class="skel" style="height:54px"></div>`;
+    }
+    polishMain(main);
+  };
+  const origReports = reportsExtra;
+  reportsExtra = function (main) {
+    origReports(main);
+    const st = pstate('reports', () => ({ mode: 'month', ym: ymOf(today()) }));
+    const [a, b] = periodRange(st);
+    const P = pnl(a, b);
+    const ex = Object.entries(P.expByCat).sort((x, y) => y[1] - x[1]);
+    const cost = [['ส่วนแบ่งคนกรีด', P.tapper], ['ค่าแรงรายวัน', P.wages + P.adjust], ...ex].filter(x => num(x[1]) > 0);
+    if (cost.length) main.insertAdjacentHTML('beforeend', `<div class="card"><h3>${ic('chart')} สัดส่วนต้นทุน ${periodLabel(st)}</h3>${donut(cost)}</div>`);
+    polishMain(main);
+  };
+}
+{
+  const origRender = render;
+  render = function () { const r = origRender(); const m = $('#main'); if (m && !['home', 'reports'].includes(route.name)) polishMain(m); return r; };
+}
+
+/* ---------------- settings: appearance card ---------------- */
+{
+  const orig = ROUTES.settings.render;
+  ROUTES.settings.render = function (main) {
+    orig(main);
+    const s = S();
+    const card = document.createElement('div'); card.className = 'card'; card.id = 'lookCard';
+    const draw = () => {
+      const c = S();
+      card.innerHTML = `<h3>${ic('leaf')} หน้าตาแอพ</h3>
+        <div class="pal-grid">${Object.entries(PALETTES).map(([k, p]) => `<button class="pal${(c.palette || 'green') === k ? ' on' : ''}" data-pal="${k}" title="${p.n}"><i style="background:linear-gradient(135deg,${p.pri},${p.pri2} 60%,${p.soft})"></i><span>${p.n}</span></button>`).join('')}</div>
+        <div class="fields" style="margin-top:12px">
+          <div class="field"><label class="fl">โหมดสว่าง/มืด</label><div class="seg">${THEME_MODES.map(([k, l]) => `<label><input type="radio" name="thm" value="${k}"${(c.theme || 'auto') === k ? ' checked' : ''}>${l}</label>`).join('')}</div></div>
+          <div class="field"><label class="fl">ขนาดตัวอักษร</label><div class="seg">${FONT_SCALES.map(([k, l]) => `<label><input type="radio" name="fsz" value="${k}"${(c.fontScale || 'm') === k ? ' checked' : ''}>${l}</label>`).join('')}</div></div>
+        </div>
+        <label class="switch"><input type="checkbox" id="lkHc"${c.contrast ? ' checked' : ''}> <span><b>ตัวหนา เส้นขอบชัด</b><br><span class="xs muted">อ่านง่ายขึ้นกลางแดด</span></span></label>
+        <label class="switch"><input type="checkbox" id="lkMo"${c.motion !== false ? ' checked' : ''}> <span><b>ลูกเล่นการเคลื่อนไหว</b><br><span class="xs muted">การ์ดค่อยๆ ขึ้น ตัวเลขวิ่ง ฉลองเมื่อบันทึกขาย</span></span></label>
+        <label class="switch"><input type="checkbox" id="lkHp"${c.haptic !== false ? ' checked' : ''}> <span><b>สั่นเมื่อบันทึกสำเร็จ</b><br><span class="xs muted">เฉพาะมือถือที่รองรับ</span></span></label>
+        <div class="look-demo"><div class="card" style="margin:0"><div class="row"><span class="ic-demo">${ic('coins')}</span><div><b>ตัวอย่างการ์ด</b><div class="xs muted">ขายยางก้อนถ้วย 320 กก.</div></div><span class="sp"></span><b class="pos">฿7,040</b></div>
+          <div class="row wrap" style="margin-top:8px"><button class="btn sm pri" type="button">ปุ่มหลัก</button><button class="btn sm" type="button">ปุ่มรอง</button><span class="badge">ป้าย</span></div></div></div>`;
+      $$('[data-pal]', card).forEach(b => b.onclick = async () => { await setS({ palette: b.dataset.pal }); applyTheme(); buzz(12); draw(); });
+      $$('[name=thm]', card).forEach(i => i.onchange = async () => { await setS({ theme: i.value }); applyTheme(); draw(); });
+      $$('[name=fsz]', card).forEach(i => i.onchange = async () => { await setS({ fontScale: i.value }); applyTheme(); });
+      $('#lkHc', card).onchange = async e => { await setS({ contrast: e.target.checked }); applyTheme(); };
+      $('#lkMo', card).onchange = async e => { await setS({ motion: e.target.checked }); applyTheme(); };
+      $('#lkHp', card).onchange = async e => { await setS({ haptic: e.target.checked }); buzz(20); };
+    };
+    draw();
+    main.insertBefore(card, main.firstElementChild);
+  };
+}
+/* =========================================================
+   v3.2 — ชั้นความเร็ว (index + cache) ทำให้แอพเบาและลื่นขึ้น
+   ========================================================= */
+
+/* ---------- cache ที่ล้างตัวเองเมื่อข้อมูลเปลี่ยน ---------- */
+let DATA_VER = 0;
+const _cache = new Map();
+function bumpData() { DATA_VER++; _cache.clear(); }
+function cached(key, fn) {
+  const k = curFarm + '|' + key;
+  if (_cache.has(k)) return _cache.get(k);
+  const v = fn();
+  if (_cache.size > 1200) _cache.clear();
+  _cache.set(k, v);
+  return v;
+}
+// ทุกการเขียนข้อมูลผ่าน store → ล้างแคช
+(function hookStore() {
+  const put = store.putRecs.bind(store), clr = store.clearAll.bind(store), la = store.loadAll.bind(store);
+  store.putRecs = (c, recs) => { bumpData(); return put(c, recs); };
+  store.clearAll = () => { bumpData(); return clr(); };
+  store.loadAll = async () => { const r = await la(); bumpData(); return r; };
+})();
+const _setFarm = v => { curFarm = v; };
+
+/* ---------- ดัชนีตามวันที่ (ค้นช่วงวันแบบ binary search) ---------- */
+const dkey = r => String(r.date || '');
+function sortedByDate(coll) {
+  return cached('sd:' + coll, () => {
+    const a = [];
+    for (const r of DB[coll].values()) if (!r.deleted) a.push(r);
+    a.sort((x, y) => dkey(x).localeCompare(dkey(y)));
+    return a;
+  });
+}
+function lowerBound(arr, d) { let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (dkey(arr[m]) < d) lo = m + 1; else hi = m; } return lo; }
+/** รายการในช่วงวันที่ (เร็วกว่าไล่ทั้งตาราง) */
+function dateSlice(coll, from, to) {
+  const a = sortedByDate(coll);
+  const i = lowerBound(a, String(from)), j = lowerBound(a, String(to) + '￿');
+  return a.slice(i, j);
+}
+/** แผนที่ id → farmId ของแต่ละตาราง */
+function farmIndex(coll) {
+  return cached('fi:' + coll, () => { const m = new Map(); for (const r of DB[coll].values()) m.set(r.id, farmOf(r)); return m; });
+}
+function rangeRows(coll, from, to, farm) {
+  const rows = dateSlice(coll, from, to);
+  if (farm === 'all' || !farm) return rows;
+  const fi = farmIndex(coll);
+  return rows.filter(r => fi.get(r.id) === farm);
+}
+
+/* ---------- saleCalc: จำผลด้วย WeakMap (ไม่มีวันค้าง) ---------- */
+const _saleCalcRaw = saleCalc;
+const _scMemo = new WeakMap();
+saleCalc = function (r) {
+  if (!r || typeof r !== 'object') return _saleCalcRaw(r);
+  let v = _scMemo.get(r);
+  if (v === undefined) { v = _saleCalcRaw(r); _scMemo.set(r, v); }
+  return v;
+};
+
+/* ---------- pnl: ใช้ดัชนีแทนการไล่ทั้งฐานข้อมูล ---------- */
+pnl = function (from, to, farm = curFarm) {
+  return cached(`pnl:${from}:${to}:${farm}`, () => {
+    const sales = rangeRows('sales', from, to, farm);
+    const calc = sales.map(r => ({ r, c: saleCalc(r) }));
+    const byProd = {};
+    calc.forEach(({ r, c }) => { const p = byProd[r.product] || (byProd[r.product] = { kg: 0, dry: 0, gross: 0, net: 0, n: 0 }); p.kg += num(r.weight); p.dry += c.dryKg; p.gross += c.gross; p.net += c.net; p.n++; });
+    const wl = rangeRows('worklogs', from, to, farm);
+    const adj = rangeRows('payments', from, to, farm).filter(r => r.type === 'adjust');
+    const ex = rangeRows('expenses', from, to, farm), inc = rangeRows('incomes', from, to, farm);
+    const expByCat = {}; ex.forEach(r => expByCat[r.cat || 'อื่นๆ'] = (expByCat[r.cat || 'อื่นๆ'] || 0) + num(r.amount));
+    const incByCat = {}; inc.forEach(r => incByCat[r.cat || 'อื่นๆ'] = (incByCat[r.cat || 'อื่นๆ'] || 0) + num(r.amount));
+    const o = {
+      salesN: sales.length, kg: r2(sum(sales, 'weight')), dryKg: r2(sum(calc, x => x.c.dryKg)),
+      gross: r2(sum(calc, x => x.c.gross)), deduct: r2(sum(sales, 'deduct')), net: r2(sum(calc, x => x.c.net)),
+      tapper: r2(sum(calc, x => x.c.tapperTotal)), ownerNet: r2(sum(calc, x => x.c.ownerNet)),
+      wages: r2(sum(wl, wageAmt)), adjust: r2(sum(adj, 'amount')), expenses: r2(sum(ex, 'amount')), other: r2(sum(inc, 'amount')),
+      byProd, expByCat, incByCat,
+      tapDays: new Set(rangeRows('tapping', from, to, farm).filter(r => r.rain !== 'skip').map(r => r.date)).size,
+    };
+    o.labor = r2(o.tapper + o.wages + o.adjust);
+    o.income = r2(o.net + o.other);
+    o.cost = r2(o.labor + o.expenses);
+    o.profit = r2(o.income - o.cost);
+    return o;
+  });
+};
+
+/* ---------- บัญชีคนงาน: คำนวณทุกคนพร้อมกันในรอบเดียว ---------- */
+function allLedgers() {
+  return cached('ledgers', () => {
+    const M = new Map();
+    const rowsOf = id => { let a = M.get(id); if (!a) M.set(id, a = []); return a; };
+    for (const r of DB.sales.values()) {
+      if (r.deleted || r.split !== 'share') continue;
+      const ids = r.workerIds || []; if (!ids.length) continue;
+      const c = saleCalc(r);
+      ids.forEach(wid => rowsOf(wid).push({ date: r.date, kind: 'share', label: `ส่วนแบ่ง${PRODUCTS[r.product] || ''} ${fmt(r.weight)} กก.`, sub: `${fmt(100 - c.ownerPct)}% ของ ${baht(c.base)}${c.ids.length > 1 ? (c.custom ? ` · ได้ ${fmt(c.pctOf[wid])}%` : ` ÷ ${c.ids.length} คน`) : ''}`, amt: c.per[wid] ?? c.perTapper, coll: 'sales', id: r.id, t: r.createdAt }));
+    }
+    for (const r of DB.worklogs.values()) { if (r.deleted || !r.workerId) continue; rowsOf(r.workerId).push({ date: r.date, kind: 'wage', label: 'ค่าแรง: ' + (r.task || ''), sub: `${fmt(r.days)} วัน × ${baht(r.wage)}${r.plotId ? ' · ' + plotName(r.plotId) : ''}`, amt: wageAmt(r), coll: 'worklogs', id: r.id, t: r.createdAt }); }
+    for (const r of DB.payments.values()) { if (r.deleted || !r.workerId) continue; rowsOf(r.workerId).push({ date: r.date, kind: r.type, label: PAYMENT_TYPES[r.type] || 'จ่ายเงิน', sub: [r.method, r.note].filter(Boolean).join(' · '), amt: r.type === 'adjust' ? num(r.amount) : -num(r.amount), coll: 'payments', id: r.id, t: r.createdAt }); }
+    const out = new Map();
+    for (const [wid, rows] of M) {
+      rows.sort((a, b) => String(a.date).localeCompare(String(b.date)) || (a.t || 0) - (b.t || 0));
+      let bal = 0; rows.forEach(x => { bal = r2(bal + x.amt); x.bal = bal; });
+      out.set(wid, {
+        rows,
+        earned: r2(sum(rows.filter(x => ['share', 'wage', 'adjust'].includes(x.kind)), 'amt')),
+        paid: r2(-sum(rows.filter(x => x.kind === 'pay' || x.kind === 'advance'), 'amt')),
+        advance: r2(-sum(rows.filter(x => x.kind === 'advance'), 'amt')),
+        balance: bal,
+      });
+    }
+    return out;
+  });
+}
+const EMPTY_LEDGER = { rows: [], earned: 0, paid: 0, advance: 0, balance: 0 };
+workerLedger = function (wid) { return allLedgers().get(wid) || EMPTY_LEDGER; };
+
+/* ---------- คงเหลือวัสดุ: รวมทุกชิ้นในรอบเดียว ---------- */
+function allStock() {
+  return cached('stock', () => {
+    const m = new Map();
+    for (const it of DB.items.values()) if (!it.deleted) m.set(it.id, num(it.initQty));
+    const add = (id, q) => { if (id && m.has(id)) m.set(id, m.get(id) + q); };
+    for (const r of DB.expenses.values()) if (!r.deleted) add(r.itemId, num(r.qty));
+    for (const r of DB.stock.values()) if (!r.deleted) add(r.itemId, r.dir === 'out' ? -num(r.qty) : num(r.qty));
+    for (const r of DB.activities.values()) if (!r.deleted) add(r.itemId, -num(r.qty));
+    for (const [k, v] of m) m.set(k, r2(v));
+    return m;
+  });
+}
+itemStock = function (id) { const v = allStock().get(id); return v === undefined ? 0 : v; };
+
+/* ---------- รายการล่าสุด (ใช้ในหน้าหลัก) ---------- */
+function recentRecords(n = 6) {
+  return cached('recent:' + n, () => {
+    const out = [];
+    for (const c of ['sales', 'expenses', 'tapping', 'worklogs']) {
+      const fi = farmIndex(c);
+      for (const r of DB[c].values()) {
+        if (r.deleted) continue;
+        if (curFarm !== 'all' && fi.get(r.id) !== curFarm) continue;
+        out.push([c, r]);
+      }
+    }
+    out.sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+    return out.slice(0, n);
+  });
+}
+
+/* ---------- โหลดรูปเมื่อเลื่อนถึง (ประหยัดแรมและเน็ต) ---------- */
+let _imgObs = null;
+function imgObserver() {
+  if (_imgObs || !('IntersectionObserver' in window)) return _imgObs;
+  _imgObs = new IntersectionObserver(es => {
+    es.forEach(async e => {
+      if (!e.isIntersecting) return;
+      const img = e.target; _imgObs.unobserve(img);
+      if (img.dataset.done) return; img.dataset.done = 1;
+      const src = await photoSrc(img.dataset.ref);
+      if (src) img.src = src; else img.alt = '📷';
+    });
+  }, { rootMargin: '300px 0px' });
+  return _imgObs;
+}
+hydratePhotos = function (root = document) {
+  const obs = imgObserver();
+  $$('img[data-ref]', root).forEach(img => {
+    if (img.dataset.done || img.dataset.obs) return;
+    if (!obs) { img.dataset.done = 1; photoSrc(img.dataset.ref).then(s => { if (s) img.src = s; else img.alt = '📷'; }); return; }
+    img.dataset.obs = 1; img.loading = 'lazy'; obs.observe(img);
+  });
+};
+
+/* ---------- รายการยาว: แสดงทีละชุด ---------- */
+const PAGE_ROWS = 80;
+function paginateLists(root) {
+  $$('.list', root).forEach(box => {
+    if (box.dataset.pg) return;
+    const kids = [...box.children];
+    if (kids.length <= PAGE_ROWS + 20) return;
+    box.dataset.pg = 1;
+    let shown = PAGE_ROWS;
+    const btn = document.createElement('button');
+    btn.className = 'btn more-btn';
+    const apply = () => {
+      kids.forEach((el, i) => { el.style.display = i < shown ? '' : 'none'; });
+      const left = kids.length - shown;
+      btn.textContent = left > 0 ? `แสดงเพิ่มอีก ${Math.min(PAGE_ROWS, left)} รายการ (เหลือ ${fmt(left, 0)})` : '';
+      btn.style.display = left > 0 ? '' : 'none';
+      if (left <= 0) return;
+    };
+    btn.onclick = () => { shown += PAGE_ROWS; apply(); hydratePhotos(box); };
+    box.after(btn);
+    apply();
+  });
+}
+
+/* ---------- วัดความเร็วจริงในเครื่องผู้ใช้ ---------- */
+const PERF = { last: 0, avg: 0, n: 0, boot: 0 };
+(function wrapRender() {
+  const raw = render;
+  render = function () {
+    const t0 = performance.now();
+    raw.apply(this, arguments);
+    const dt = performance.now() - t0;
+    PERF.last = dt; PERF.n++; PERF.avg = PERF.avg + (dt - PERF.avg) / Math.min(PERF.n, 20);
+    try { paginateLists($('#main')); } catch (e) { }
+  };
+})();
+/* =========================================================
+   v3.2 — วิเคราะห์กำไรเชิงลึก (ต้นทุนต่อกิโล จุดคุ้มทุน รายแปลง เทียบปีต่อปี)
+   ========================================================= */
+Object.assign(ICONS, {
+  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
+  medal: '<circle cx="12" cy="15" r="5"/><path d="M9 10L6 3h12l-3 7"/><path d="M12 13l.8 1.6 1.7.2-1.3 1.2.3 1.7-1.5-.8-1.5.8.3-1.7-1.3-1.2 1.7-.2z"/>',
+  slider: '<path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2"/><circle cx="10" cy="16" r="2"/>',
+});
+
+/* หมวดต้นทุน: จัดกลุ่มรายจ่ายเป็นกลุ่มใหญ่ที่ชาวสวนเข้าใจ */
+const COST_GROUPS = [
+  ['แรงงาน', ['ค่าจ้างเหมา'], 'var(--violet)'],
+  ['ปุ๋ย/บำรุงดิน', ['ปุ๋ย', 'ปุ๋ยคอก', 'วิเคราะห์ดิน'], 'var(--pri2)'],
+  ['ยา/สารเคมี', ['ยากำจัดวัชพืช', 'ยา/สารป้องกันโรค', 'กรดฟอร์มิก/น้ำกรด'], 'var(--amber)'],
+  ['อุปกรณ์กรีด', ['อุปกรณ์กรีด (ถ้วย ลวด ราง มีด)', 'ไฟฉาย/แบตเตอรี่', 'ซ่อมบำรุง/เครื่องมือ'], 'var(--blue)'],
+  ['น้ำมัน/ขนส่ง', ['น้ำมันเชื้อเพลิง', 'ค่าขนส่ง'], 'var(--red)'],
+  ['ปลูก/ขยายสวน', ['กล้ายาง/ปลูกซ่อม'], 'var(--pri)'],
+  ['ภาษี/ค่าธรรมเนียม', ['ภาษีที่ดิน/ค่าธรรมเนียม'], 'var(--ink3)'],
+];
+function costGroupOf(cat) {
+  for (const [g, cats] of COST_GROUPS) if (cats.includes(cat)) return g;
+  return 'อื่นๆ';
+}
+const COST_GROUP_COLOR = Object.fromEntries([...COST_GROUPS.map(([g, , c]) => [g, c]), ['อื่นๆ', 'var(--ink3)']]);
+
+/** สรุปต้นทุนต่อกิโลกรัมของยางที่ขายในช่วงเวลา */
+function costPerKg(from, to, farm = curFarm) {
+  return cached(`cpk:${from}:${to}:${farm}`, () => {
+    const P = pnl(from, to, farm);
+    const kg = P.kg, dry = P.dryKg;
+    const parts = [];
+    if (P.tapper) parts.push(['ส่วนแบ่งคนกรีด', P.tapper, 'var(--amber)', true]);
+    if (P.wages + P.adjust) parts.push(['ค่าแรงรายวัน/โบนัส', r2(P.wages + P.adjust), 'var(--violet)', false]);
+    const byG = {};
+    Object.entries(P.expByCat).forEach(([cat, v]) => { const g = costGroupOf(cat); byG[g] = (byG[g] || 0) + v; });
+    Object.entries(byG).sort((a, b) => b[1] - a[1]).forEach(([g, v]) => parts.push([g, r2(v), COST_GROUP_COLOR[g] || 'var(--ink3)', false]));
+    const total = r2(sum(parts, x => x[1]));
+    const fixed = r2(total - P.tapper);           // ต้นทุนที่ไม่ขึ้นกับราคายาง
+    const avgPrice = kg ? r2(P.gross / kg) : 0;
+    const sharePct = P.net ? r2(P.tapper * 100 / P.net) : 0;  // สัดส่วนที่คนกรีดได้จากยอดสุทธิ
+    const ownerKeep = 1 - sharePct / 100;
+    return {
+      P, kg, dry, parts, total, fixed, avgPrice,
+      perKg: kg ? r2(total / kg) : 0,
+      fixedPerKg: kg ? r2(fixed / kg) : 0,
+      marginPerKg: kg ? r2((P.income - total) / kg) : 0,
+      sharePct, ownerKeep,
+      // ราคาต่ำสุดที่ยังไม่ขาดทุน (คิดส่วนแบ่งคนกรีดตามสัดส่วนเดิม)
+      breakEven: kg && ownerKeep > 0 ? r2(fixed / (kg * ownerKeep)) : 0,
+      // กก. ขั้นต่ำที่ต้องขายที่ราคาปัจจุบันจึงจะเท่าทุน
+      breakEvenKg: avgPrice && ownerKeep > 0 ? r2(fixed / (avgPrice * ownerKeep)) : 0,
+    };
+  });
+}
+
+/** สรุปรายแปลงในช่วงเวลา (รอบเดียวจบ ไม่ไล่ซ้ำทีละแปลง) */
+function plotStatsRange(from, to, farm = curFarm) {
+  return cached(`ps:${from}:${to}:${farm}`, () => {
+    const plots = list('plots', p => (farm === 'all' || p.farmId === farm)).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+    const M = new Map(); const mk = id => { let x = M.get(id); if (!x) M.set(id, x = { kg: 0, dry: 0, gross: 0, net: 0, ownerNet: 0, tapper: 0, wages: 0, expenses: 0, other: 0, days: new Set(), salesN: 0 }); return x; };
+    plots.forEach(p => mk(p.id));
+    const un = mk('');
+    for (const r of rangeRows('sales', from, to, farm)) { const x = mk(r.plotId || ''); const c = saleCalc(r); x.kg += num(r.weight); x.dry += c.dryKg; x.gross += c.gross; x.net += c.net; x.ownerNet += c.ownerNet; x.tapper += c.tapperTotal; x.salesN++; }
+    for (const r of rangeRows('tapping', from, to, farm)) { if (r.rain === 'skip') continue; mk(r.plotId || '').days.add(r.date); }
+    for (const r of rangeRows('worklogs', from, to, farm)) mk(r.plotId || '').wages += wageAmt(r);
+    for (const r of rangeRows('payments', from, to, farm)) if (r.type === 'adjust') mk(r.plotId || '').wages += num(r.amount);
+    for (const r of rangeRows('expenses', from, to, farm)) mk(r.plotId || '').expenses += num(r.amount);
+    for (const r of rangeRows('incomes', from, to, farm)) mk(r.plotId || '').other += num(r.amount);
+    const rows = plots.map(p => {
+      const x = M.get(p.id), area = plotArea(p), trees = num(p.trees);
+      const cost = r2(x.tapper + x.wages + x.expenses);   // ต้นทุนรวมส่วนแบ่งคนกรีด
+      const income = r2(x.net + x.other);                  // รายรับก่อนแบ่ง (ให้ตรงกับงบรวม)
+      return {
+        p, area, trees, kg: r2(x.kg), dry: r2(x.dry), gross: r2(x.gross), days: x.days.size, salesN: x.salesN,
+        tapper: r2(x.tapper), wages: r2(x.wages), expenses: r2(x.expenses), cost, income, profit: r2(income - cost),
+        kgRai: area ? r2(x.kg / area) : 0, profitRai: area ? r2((income - cost) / area) : 0, costRai: area ? r2(cost / area) : 0,
+        kgTree: trees ? r2(x.kg / trees) : 0,
+        costKg: x.kg ? r2(cost / x.kg) : 0,
+      };
+    });
+    const u = { kg: r2(un.kg), income: r2(un.net + un.other), cost: r2(un.tapper + un.wages + un.expenses) };
+    return { rows, unassigned: u };
+  });
+}
+
+/** สรุปคนงานในช่วงเวลา */
+function workerStatsRange(from, to, farm = curFarm) {
+  return cached(`ws:${from}:${to}:${farm}`, () => {
+    const M = new Map(); const mk = id => { let x = M.get(id); if (!x) M.set(id, x = { kg: 0, share: 0, wage: 0, days: new Set(), sales: 0 }); return x; };
+    for (const r of rangeRows('tapping', from, to, farm)) { if (r.rain === 'skip') continue; const ids = r.workerIds || []; ids.forEach(id => { const x = mk(id); x.days.add(r.date); x.kg += num(r.qty) / Math.max(1, ids.length); }); }
+    for (const r of rangeRows('sales', from, to, farm)) { if (r.split !== 'share') continue; const c = saleCalc(r); (c.ids || []).forEach(id => { const x = mk(id); x.share += c.per[id] ?? c.perTapper; x.sales += num(r.weight) / Math.max(1, c.ids.length); }); }
+    for (const r of rangeRows('worklogs', from, to, farm)) if (r.workerId) mk(r.workerId).wage += wageAmt(r);
+    return [...M.entries()].map(([id, x]) => {
+      const w = get('workers', id); if (!w) return null;
+      const days = x.days.size;
+      return { w, days, kg: r2(x.kg), sales: r2(x.sales), share: r2(x.share), wage: r2(x.wage), kgDay: days ? r2(x.kg / days) : 0, bahtDay: days ? r2((x.share + x.wage) / days) : 0, total: r2(x.share + x.wage) };
+    }).filter(Boolean).sort((a, b) => b.total - a.total);
+  });
+}
+
+const pctChange = (cur, prev) => !prev ? (cur ? 100 : 0) : r2((cur - prev) * 100 / Math.abs(prev));
+const chgBadge = (cur, prev, goodUp = true) => {
+  if (!prev) return '<span class="xs faint">—</span>';
+  const p = pctChange(cur, prev), up = p > 0.5, dn = p < -0.5;
+  const good = up ? goodUp : dn ? !goodUp : null;
+  return `<span class="xs ${good === null ? 'faint' : good ? 'pos' : 'neg'}">${up ? '▲' : dn ? '▼' : '•'} ${fmt(Math.abs(p), 0)}%</span>`;
+};
+
+ROUTES.profit = {
+  title: 'วิเคราะห์กำไร',
+  render(main) {
+    const st = pstate('profit', () => ({ mode: 'year', ym: ymOf(today()), alloc: true, tab: 'cost' }));
+    const draw = () => {
+      const [a, b] = periodRange(st);
+      const C = costPerKg(a, b), P = C.P;
+      const PS = plotStatsRange(a, b), WS = workerStatsRange(a, b);
+      const areaAll = r2(sum(PS.rows.filter(x => x.p.status !== 'young'), x => x.area));
+      const treesAll = sum(PS.rows.filter(x => x.p.status !== 'young'), x => x.trees);
+      // เทียบช่วงก่อนหน้า
+      const prevRange = st.mode === 'all' ? null : st.mode === 'year'
+        ? [`${+st.ym.slice(0, 4) - 1}-01-01`, `${+st.ym.slice(0, 4) - 1}-12-31`]
+        : [shiftYM(st.ym, -12) + '-01', lastDay(shiftYM(st.ym, -12))];
+      const PV = prevRange ? pnl(prevRange[0], prevRange[1]) : null;
+      const CV = prevRange ? costPerKg(prevRange[0], prevRange[1]) : null;
+
+      const tabs = [['cost', 'ต้นทุน/จุดคุ้มทุน'], ['plots', 'รายแปลง'], ['people', 'คนงาน'], ['yoy', 'เทียบปีต่อปี'], ['what', 'ลองปรับราคา']];
+
+      /* ---- ส่วนที่ 1: ต้นทุนต่อกิโล + จุดคุ้มทุน ---- */
+      const costTab = () => {
+        if (!C.kg) return emptyBox('ยังไม่มีการขายยางในช่วงนี้ ลองเปลี่ยนช่วงเวลาด้านบน', 'coins');
+        const rows = C.parts.map(([l, v, c, isShare]) => [l, v, c, isShare]);
+        return `
+        <div class="grid2" style="margin-bottom:12px">
+          ${kpi('ต้นทุนจริงต่อ กก.', fmt(C.perKg, 2) + ' บ.', `ขายได้เฉลี่ย ${fmt(C.avgPrice, 2)} บ./กก.`, 'calc', C.perKg > C.avgPrice ? 'neg' : '')}
+          ${kpi('เหลือเป็นกำไรต่อ กก.', fmt(C.marginPerKg, 2) + ' บ.', C.avgPrice ? `คิดเป็น ${fmt(C.marginPerKg * 100 / C.avgPrice, 0)}% ของราคาขาย` : '', 'coins', C.marginPerKg < 0 ? 'neg' : 'pos')}
+          ${kpi('ราคาต่ำสุดที่ไม่ขาดทุน', fmt(C.breakEven, 2) + ' บ./กก.', C.avgPrice ? (C.avgPrice > C.breakEven ? `สูงกว่าจุดคุ้มทุน ${fmt(C.avgPrice - C.breakEven, 2)} บ.` : `ต่ำกว่าจุดคุ้มทุน ${fmt(C.breakEven - C.avgPrice, 2)} บ.`) : '', 'target', C.avgPrice && C.avgPrice < C.breakEven ? 'neg' : 'pos')}
+          ${kpi('ต้องขายอย่างน้อย', fmt(C.breakEvenKg, 0) + ' กก.', `ขายจริง ${fmt(C.kg, 0)} กก.`, 'scale', C.kg < C.breakEvenKg ? 'neg' : 'pos')}
+        </div>
+        <div class="card"><h3>${ic('receipt')} ต้นทุนแยกตามหมวด (ต่อกิโลกรัมที่ขายได้)</h3>
+          <div class="tbl-wrap"><table class="tbl"><tr><th>หมวด</th><th class="n">รวม</th><th class="n">บ./กก.</th><th class="n">สัดส่วน</th></tr>
+          ${rows.map(([l, v, c]) => `<tr><td><i class="dotc" style="background:${c}"></i>${esc(l)}</td><td class="n">${baht(v)}</td><td class="n tnum">${fmt(v / C.kg, 2)}</td><td class="n">${fmt(v * 100 / (C.total || 1), 0)}%</td></tr>`).join('')}
+          <tr class="tot"><td>รวมต้นทุน</td><td class="n">${baht(C.total)}</td><td class="n tnum">${fmt(C.perKg, 2)}</td><td class="n">100%</td></tr>
+          <tr class="tot"><td>ราคาขายเฉลี่ย</td><td class="n">${baht(P.gross)}</td><td class="n tnum">${fmt(C.avgPrice, 2)}</td><td class="n">-</td></tr>
+          <tr class="tot"><td>กำไรต่อ กก.</td><td class="n ${C.marginPerKg < 0 ? 'neg' : 'pos'}">${baht(P.income - C.total)}</td><td class="n tnum ${C.marginPerKg < 0 ? 'neg' : 'pos'}">${fmt(C.marginPerKg, 2)}</td><td class="n">-</td></tr>
+          </table></div>
+          ${hbars(rows.map(([l, v, c]) => [l, v, c]), { color: 'var(--red)' })}
+        </div>
+        <div class="card"><h3>${ic('target')} จุดคุ้มทุน</h3>
+          <p class="small">ต้นทุนที่ต้องจ่ายไม่ว่าราคายางจะเป็นเท่าไร (ค่าแรงรายวัน ปุ๋ย ยา น้ำมัน ฯลฯ) รวม <b>${baht(C.fixed)}</b> คิดเป็น <b>${fmt(C.fixedPerKg, 2)} บ./กก.</b>
+          ${C.sharePct ? `<br>คนกรีดได้ส่วนแบ่ง ${fmt(C.sharePct, 0)}% ของยอดสุทธิ เจ้าของจึงเหลือ ${fmt(C.ownerKeep * 100, 0)}%` : ''}</p>
+          <dl class="kv"><dt>ราคายางต่ำสุดที่ยังไม่ขาดทุน</dt><dd class="tnum"><b>${fmt(C.breakEven, 2)} บาท/กก.</b></dd>
+          <dt>ปริมาณขั้นต่ำที่ราคาปัจจุบัน</dt><dd class="tnum">${fmt(C.breakEvenKg, 0)} กก.${areaAll ? ` (${fmt(C.breakEvenKg / areaAll, 0)} กก./ไร่)` : ''}</dd>
+          ${areaAll ? `<dt>กำไรต่อไร่</dt><dd class="tnum ${P.profit < 0 ? 'neg' : 'pos'}">${baht(P.profit / areaAll)}</dd>` : ''}
+          ${treesAll ? `<dt>กำไรต่อต้น</dt><dd class="tnum">${baht(P.profit / treesAll)}</dd>` : ''}
+          ${areaAll ? `<dt>ผลผลิตต่อไร่</dt><dd class="tnum">${fmt(C.kg / areaAll, 0)} กก.</dd>` : ''}
+          </dl>
+          <div class="hint">จุดคุ้มทุนคำนวณจากต้นทุนจริงที่บันทึกไว้ในช่วงนี้ ยิ่งบันทึกครบ ตัวเลขยิ่งแม่น</div>
+        </div>`;
+      };
+
+      /* ---- ส่วนที่ 2: รายแปลง ---- */
+      const plotTab = () => {
+        const rows = PS.rows.filter(x => x.kg || x.cost);
+        if (!rows.length) return emptyBox('ยังไม่มีข้อมูลรายแปลงในช่วงนี้', 'leaf');
+        // เฉลี่ยต้นทุนส่วนกลางตามพื้นที่
+        const totArea = sum(rows, x => x.area);
+        const shared = st.alloc ? PS.unassigned.cost : 0, sharedIn = st.alloc ? PS.unassigned.income : 0;
+        const adj = rows.map(x => {
+          const w = totArea ? x.area / totArea : 1 / rows.length;
+          const cost = r2(x.cost + shared * w), income = r2(x.income + sharedIn * w);
+          return { ...x, cost, income, profit: r2(income - cost), profitRai: x.area ? r2((income - cost) / x.area) : 0, costKg: x.kg ? r2(cost / x.kg) : 0 };
+        }).sort((p, q) => q.profitRai - p.profitRai || q.profit - p.profit);
+        const best = adj[0], worst = adj[adj.length - 1];
+        return `
+        <label class="switch small" style="margin-bottom:10px"><input type="checkbox" id="pAlloc"${st.alloc ? ' checked' : ''}> เฉลี่ยรายการที่ไม่ได้ระบุแปลงตามขนาดพื้นที่ ${PS.unassigned.cost || PS.unassigned.income ? `(ค่าใช้จ่าย ${bahtS(PS.unassigned.cost)} · รายรับ ${bahtS(PS.unassigned.income)})` : ''}</label>
+        ${adj.length > 1 ? `<div class="grid2" style="margin-bottom:12px">
+          ${kpi('แปลงที่คุ้มที่สุด', esc(best.p.name), `${baht(best.profitRai)}/ไร่ · ${fmt(best.kgRai, 0)} กก./ไร่`, 'medal', 'pos')}
+          ${kpi('แปลงที่ควรดูแล', esc(worst.p.name), `${baht(worst.profitRai)}/ไร่ · ${fmt(worst.kgRai, 0)} กก./ไร่`, 'alert', worst.profitRai < 0 ? 'neg' : '')}
+        </div>` : ''}
+        <div class="card"><h3>${ic('leaf')} กำไรต่อไร่รายแปลง</h3>
+        ${hbars(adj.map(x => [x.p.name, x.profitRai, x.profitRai < 0 ? 'var(--red)' : 'var(--pri2)']), { fmtV: v => baht(v) })}
+        <div class="tbl-wrap" style="margin-top:12px"><table class="tbl"><tr><th>แปลง</th><th class="n">ไร่</th><th class="n">กก.</th><th class="n">กก./ไร่</th><th class="n">ต้นทุน/กก.</th><th class="n">กำไร</th><th class="n">กำไร/ไร่</th></tr>
+        ${adj.map(x => `<tr><td><a href="#plot/${x.p.id}">${esc(x.p.name)}</a>${x.p.status === 'young' ? '<span class="xs faint"> (ยังไม่กรีด)</span>' : ''}</td><td class="n">${fmt(x.area, 1)}</td><td class="n">${fmt(x.kg, 0)}</td><td class="n">${x.area ? fmt(x.kgRai, 0) : '-'}</td><td class="n tnum">${x.kg ? fmt(x.costKg, 2) : '-'}</td><td class="n ${x.profit < 0 ? 'neg' : 'pos'}">${bahtS(x.profit)}</td><td class="n ${x.profitRai < 0 ? 'neg' : 'pos'}">${x.area ? bahtS(x.profitRai) : '-'}</td></tr>`).join('')}
+        </table></div>
+        <div class="hint">กำไรรายแปลง = ยอดขายสุทธิของแปลงนั้น ลบส่วนแบ่งคนกรีด ค่าแรง และค่าใช้จ่ายที่ผูกกับแปลง (วิธีเดียวกับงบกำไรขาดทุนรวม)</div></div>`;
+      };
+
+      /* ---- ส่วนที่ 3: คนงาน ---- */
+      const peopleTab = () => {
+        if (!WS.length) return emptyBox('ยังไม่มีข้อมูลคนงานในช่วงนี้', 'users');
+        const byKg = [...WS].filter(x => x.days).sort((p, q) => q.kgDay - p.kgDay);
+        return `
+        <div class="card"><h3>${ic('medal')} ผลงานคนกรีด</h3>
+        ${byKg.length ? hbars(byKg.map(x => [x.w.name, x.kgDay, 'var(--pri2)']), { fmtV: v => fmt(v, 1) + ' กก./วัน' }) : ''}
+        <div class="tbl-wrap" style="margin-top:12px"><table class="tbl"><tr><th>คนงาน</th><th class="n">วันกรีด</th><th class="n">กก.รวม</th><th class="n">กก./วัน</th><th class="n">ส่วนแบ่ง</th><th class="n">ค่าแรง</th><th class="n">รายได้/วัน</th></tr>
+        ${WS.map(x => `<tr><td><a href="#worker/${x.w.id}">${esc(x.w.name)}</a></td><td class="n">${x.days || '-'}</td><td class="n">${x.kg ? fmt(x.kg, 0) : '-'}</td><td class="n tnum">${x.kgDay ? fmt(x.kgDay, 1) : '-'}</td><td class="n">${bahtS(x.share)}</td><td class="n">${bahtS(x.wage)}</td><td class="n tnum">${x.bahtDay ? baht(x.bahtDay) : '-'}</td></tr>`).join('')}
+        </table></div>
+        <div class="hint">กก./วัน คำนวณจากน้ำหนักที่บันทึกตอนกรีด หารด้วยจำนวนวันที่คนนั้นออกกรีด (ถ้ากรีดหลายคนในวันเดียวจะหารเฉลี่ย)</div></div>
+        <div class="card"><h3>${ic('wallet')} ต้นทุนแรงงานเทียบผลผลิต</h3>
+        <dl class="kv"><dt>ค่าแรงรวม (ส่วนแบ่ง + รายวัน)</dt><dd>${baht(sum(WS, x => x.total))}</dd>
+        <dt>คิดเป็นต่อกิโลที่ขาย</dt><dd class="tnum">${C.kg ? fmt(sum(WS, x => x.total) / C.kg, 2) + ' บ./กก.' : '-'}</dd>
+        <dt>คิดเป็นสัดส่วนของรายรับ</dt><dd>${P.income ? fmt(sum(WS, x => x.total) * 100 / P.income, 0) + '%' : '-'}</dd></dl></div>`;
+      };
+
+      /* ---- ส่วนที่ 4: เทียบปีต่อปี ---- */
+      const yoyTab = () => {
+        const y = +(st.mode === 'all' ? today() : st.ym).slice(0, 4);
+        const years = [y - 2, y - 1, y];
+        const YP = years.map(yy => pnl(`${yy}-01-01`, `${yy}-12-31`));
+        const months = TH_MON;
+        const series = years.map((yy, i) => ({ name: 'ปี ' + (yy + 543), color: ['var(--ink3)', 'var(--amber)', 'var(--pri2)'][i], values: months.map((_, m) => pnl(`${yy}-${String(m + 1).padStart(2, '0')}-01`, lastDay(`${yy}-${String(m + 1).padStart(2, '0')}`)).profit) }));
+        const metrics = [
+          ['รายรับรวม', x => x.income, baht, true],
+          ['ค่าใช้จ่ายรวม', x => x.cost, baht, false],
+          ['กำไรสุทธิ', x => x.profit, baht, true],
+          ['ยางที่ขาย (กก.)', x => x.kg, v => fmt(v, 0), true],
+          ['ราคาเฉลี่ย บ./กก.', x => x.kg ? x.gross / x.kg : 0, v => fmt(v, 2), true],
+          ['วันกรีด', x => x.tapDays, v => fmt(v, 0), true],
+        ];
+        return `
+        <div class="card"><h3>${ic('chart')} กำไรรายเดือน เทียบ 3 ปี</h3>${lineChart(months, series, { h: 200, yfmt: bahtS, zero: true })}</div>
+        <div class="card"><h3>${ic('trend')} เทียบตัวเลขรายปี</h3><div class="tbl-wrap"><table class="tbl">
+          <tr><th>รายการ</th>${years.map(yy => `<th class="n">${yy + 543}</th>`).join('')}<th class="n">เทียบปีก่อน</th></tr>
+          ${metrics.map(([l, f, fm, goodUp]) => `<tr><td>${l}</td>${YP.map(x => `<td class="n tnum">${fm(f(x))}</td>`).join('')}<td class="n">${chgBadge(f(YP[2]), f(YP[1]), goodUp)}</td></tr>`).join('')}
+        </table></div></div>
+        ${PV ? `<div class="card"><h3>${ic('calc')} ${periodLabel(st)} เทียบช่วงเดียวกันปีก่อน</h3><div class="tbl-wrap"><table class="tbl">
+          <tr><th>รายการ</th><th class="n">ช่วงนี้</th><th class="n">ปีก่อน</th><th class="n">เปลี่ยน</th></tr>
+          <tr><td>กำไรสุทธิ</td><td class="n">${baht(P.profit)}</td><td class="n">${baht(PV.profit)}</td><td class="n">${chgBadge(P.profit, PV.profit)}</td></tr>
+          <tr><td>ยางที่ขาย</td><td class="n">${fmt(P.kg, 0)} กก.</td><td class="n">${fmt(PV.kg, 0)} กก.</td><td class="n">${chgBadge(P.kg, PV.kg)}</td></tr>
+          <tr><td>ต้นทุนต่อ กก.</td><td class="n tnum">${fmt(C.perKg, 2)}</td><td class="n tnum">${fmt(CV.perKg, 2)}</td><td class="n">${chgBadge(C.perKg, CV.perKg, false)}</td></tr>
+          <tr><td>ราคาขายเฉลี่ย</td><td class="n tnum">${fmt(C.avgPrice, 2)}</td><td class="n tnum">${fmt(CV.avgPrice, 2)}</td><td class="n">${chgBadge(C.avgPrice, CV.avgPrice)}</td></tr>
+          <tr><td>จุดคุ้มทุน</td><td class="n tnum">${fmt(C.breakEven, 2)}</td><td class="n tnum">${fmt(CV.breakEven, 2)}</td><td class="n">${chgBadge(C.breakEven, CV.breakEven, false)}</td></tr>
+        </table></div></div>` : ''}`;
+      };
+
+      /* ---- ส่วนที่ 5: ลองปรับราคา ---- */
+      const whatTab = () => `
+        <div class="card"><h3>${ic('slider')} ถ้าราคายางหรือต้นทุนเปลี่ยน กำไรจะเป็นเท่าไร</h3>
+        <p class="small muted">อ้างอิงจากผลจริงของ ${periodLabel(st)}: ขาย ${fmt(C.kg, 0)} กก. ที่ราคาเฉลี่ย ${fmt(C.avgPrice, 2)} บ./กก. ต้นทุนคงที่ ${baht(C.fixed)}</p>
+        <div class="field"><label class="fl">ราคายาง <span id="wPriceL"></span></label><input type="range" id="wPrice" min="-40" max="40" step="1" value="0" class="rng"></div>
+        <div class="field"><label class="fl">ต้นทุน <span id="wCostL"></span></label><input type="range" id="wCost" min="-40" max="40" step="1" value="0" class="rng"></div>
+        <div class="field"><label class="fl">ผลผลิต <span id="wKgL"></span></label><input type="range" id="wKg" min="-40" max="40" step="1" value="0" class="rng"></div>
+        <div id="wOut" style="margin-top:6px"></div>
+        <div class="row wrap" style="margin-top:10px"><button class="btn sm" data-wpreset="-20,0,0">ราคาตก 20%</button><button class="btn sm" data-wpreset="20,0,0">ราคาขึ้น 20%</button><button class="btn sm" data-wpreset="0,15,0">ปุ๋ย/ค่าแรงแพงขึ้น 15%</button><button class="btn sm" data-wpreset="0,0,0">รีเซ็ต</button></div>
+        </div>`;
+
+      const body = { cost: costTab, plots: plotTab, people: peopleTab, yoy: yoyTab, what: whatTab }[st.tab] || costTab;
+      main.innerHTML = `${periodNav(st)}
+        <div class="chips">${tabs.map(([k, l]) => `<button class="chip${st.tab === k ? ' on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
+        <div class="card hero"><div class="small faint">กำไรสุทธิ ${periodLabel(st)}${curFarm !== 'all' ? ' · ' + esc(farmName(curFarm)) : ''}</div>
+          <div style="font-size:30px;font-weight:700" class="tnum">${baht(P.profit)}</div>
+          <div class="small faint">${C.kg ? `กำไร ${fmt(C.marginPerKg, 2)} บ./กก. · ต้นทุน ${fmt(C.perKg, 2)} บ./กก.` : 'ยังไม่มีการขายในช่วงนี้'}${PV ? ` · เทียบปีก่อน ${chgBadge(P.profit, PV.profit)}` : ''}</div></div>
+        ${body()}
+        <div class="row wrap no-print" style="margin-top:12px"><button class="btn" id="pCsv">${ic('download')} ดาวน์โหลด CSV</button><button class="btn" onclick="window.print()">${ic('print')} พิมพ์/บันทึก PDF</button></div>`;
+      bindPeriod(main, st, draw);
+      $$('[data-tab]', main).forEach(c => c.onclick = () => { st.tab = c.dataset.tab; draw(); });
+      const al = $('#pAlloc', main); if (al) al.onchange = () => { st.alloc = al.checked; draw(); };
+      if (st.tab === 'what') bindWhatIf(main, C, P);
+      $('#pCsv', main).onclick = () => {
+        const rows = [['วิเคราะห์กำไร', periodLabel(st)], [], ['ต้นทุนแยกหมวด', 'บาท', 'บาท/กก.'],
+          ...C.parts.map(([l, v]) => [l, r2(v), C.kg ? r2(v / C.kg) : 0]),
+          ['รวมต้นทุน', C.total, C.perKg], ['ราคาขายเฉลี่ย', P.gross, C.avgPrice], ['กำไรต่อกิโล', r2(P.income - C.total), C.marginPerKg],
+          ['จุดคุ้มทุน (บาท/กก.)', C.breakEven], ['ปริมาณคุ้มทุน (กก.)', C.breakEvenKg], [],
+          ['แปลง', 'ไร่', 'กก.', 'กก./ไร่', 'ต้นทุน/กก.', 'กำไร', 'กำไร/ไร่'],
+          ...PS.rows.map(x => [x.p.name, x.area, x.kg, x.kgRai, x.costKg, x.profit, x.profitRai]), [],
+          ['คนงาน', 'วันกรีด', 'กก.', 'กก./วัน', 'ส่วนแบ่ง', 'ค่าแรง', 'รายได้/วัน'],
+          ...WS.map(x => [x.w.name, x.days, x.kg, x.kgDay, x.share, x.wage, x.bahtDay])];
+        downloadFile(`วิเคราะห์กำไร_${periodLabel(st).replace(/\s/g, '_')}.csv`, '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n'), 'text/csv');
+      };
+    };
+    draw();
+  }
+};
+
+function bindWhatIf(main, C, P) {
+  const price = $('#wPrice', main), cost = $('#wCost', main), kgEl = $('#wKg', main), out = $('#wOut', main);
+  if (!price) return;
+  const model = (dp, dc, dk) => {
+    const kg = C.kg * (1 + dk), pr = C.avgPrice * (1 + dp);
+    const net = kg * pr - (P.kg ? P.deduct * (1 + dk) : 0);
+    const tapper = net * (C.sharePct / 100);
+    const fixed = C.fixed * (1 + dc);
+    const income = net - tapper + P.other;
+    return { kg, pr, fixed, income, profit: income - fixed };
+  };
+  const zero = model(0, 0, 0);
+  const shift = P.profit - zero.profit;   // ให้ค่าที่ 0% ตรงกับกำไรจริงพอดี
+  const calc = () => {
+    const dp = num(price.value) / 100, dc = num(cost.value) / 100, dk = num(kgEl.value) / 100;
+    const m = model(dp, dc, dk);
+    const kg = m.kg, pr = m.pr, fixed = m.fixed, income = m.income + shift;
+    const profit = r2(income - fixed);
+    const base = P.profit;
+    $('#wPriceL', main).innerHTML = `<b class="tnum">${fmt(pr, 2)} บ./กก.</b> <span class="xs ${dp > 0 ? 'pos' : dp < 0 ? 'neg' : 'faint'}">(${dp >= 0 ? '+' : ''}${fmt(dp * 100, 0)}%)</span>`;
+    $('#wCostL', main).innerHTML = `<b class="tnum">${baht(fixed)}</b> <span class="xs ${dc > 0 ? 'neg' : dc < 0 ? 'pos' : 'faint'}">(${dc >= 0 ? '+' : ''}${fmt(dc * 100, 0)}%)</span>`;
+    $('#wKgL', main).innerHTML = `<b class="tnum">${fmt(kg, 0)} กก.</b> <span class="xs ${dk > 0 ? 'pos' : dk < 0 ? 'neg' : 'faint'}">(${dk >= 0 ? '+' : ''}${fmt(dk * 100, 0)}%)</span>`;
+    const be = kg && C.ownerKeep > 0 ? fixed / (kg * C.ownerKeep) : 0;
+    out.innerHTML = `<div class="grid2">
+      ${kpi('กำไรที่จะได้', baht(profit), `จากเดิม ${baht(base)}`, 'trend', profit < 0 ? 'neg' : 'pos')}
+      ${kpi('เปลี่ยนไป', (profit - base >= 0 ? '+' : '') + baht(profit - base), base ? `${fmt(pctChange(profit, base), 0)}%` : '', 'calc', profit - base < 0 ? 'neg' : 'pos')}
+      ${kpi('จุดคุ้มทุนใหม่', fmt(be, 2) + ' บ./กก.', pr >= be ? 'ยังคุ้มทุน' : 'ขาดทุน', 'target', pr < be ? 'neg' : 'pos')}
+      ${kpi('กำไรต่อ กก.', fmt(kg ? (income - fixed) / kg : 0, 2) + ' บ.', '', 'coins', income - fixed < 0 ? 'neg' : 'pos')}
+    </div>`;
+  };
+  [price, cost, kgEl].forEach(el => el.oninput = calc);
+  $$('[data-wpreset]', main).forEach(b => b.onclick = () => { const [a, c, k] = b.dataset.wpreset.split(',');
+    price.value = a; cost.value = c; kgEl.value = k; calc(); });
+  calc();
+}
+
+/* เพิ่มเมนูใหม่เข้าไปในหน้าเมนู โดยไม่ต้องแก้โครงเดิม */
+function addMenuItems(map) {
+  const titles = $$('#main .sec-title');
+  Object.entries(map).forEach(([group, items]) => {
+    const t = titles.find(x => x.textContent.trim() === group);
+    const grid = t && t.nextElementSibling;
+    if (!grid || !grid.classList.contains('menu-grid')) return;
+    items.forEach(([r, i, l]) => {
+      if (grid.querySelector(`[data-go="${r}"]`)) return;
+      const b = document.createElement('button');
+      b.dataset.go = r; b.innerHTML = `<span class="q">${ic(i)}</span>${l}`;
+      grid.appendChild(b);
+    });
+  });
+}
+(function extendMenu() {
+  const raw = ROUTES.menu.render;
+  ROUTES.menu.render = function (main) {
+    raw.call(this, main);
+    addMenuItems({
+      'การเงิน': [['profit', 'target', 'วิเคราะห์กำไรเชิงลึก']],
+      'เครื่องมือ': [['safety', 'shieldck', 'ข้อมูลปลอดภัย/กู้คืน'], ['trash', 'trash', 'ถังขยะ (กู้รายการที่ลบ)']],
+    });
+  };
+})();
+/* =========================================================
+   v3.2 — ข้อมูลปลอดภัยและกู้คืนได้
+   ถังขยะ · ประวัติการแก้ไข · จุดกู้คืนในเครื่อง · ตรวจสุขภาพข้อมูล
+   ========================================================= */
+Object.assign(ICONS, {
+  shieldck: '<path d="M12 3l8 3v6c0 5-3.4 8.3-8 9-4.6-.7-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-4.5"/>',
+  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-3"/>',
+  save: '<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/>',
+});
+
+/* ---------------- ประวัติการแก้ไข (เก็บในเครื่อง) ---------------- */
+const HIST_MAX = 250;
+const HIST_PRE = '__hist|';
+const memHist = [];
+let histSeq = 0;
+const histKey = () => HIST_PRE + String(Date.now()).padStart(14, '0') + '.' + String(++histSeq).padStart(3, '0');
+
+async function histPut(entry) {
+  const e = { id: histKey().slice(HIST_PRE.length), ...entry };
+  if (store.mode !== 'idb' || !store.db) { memHist.push(e); while (memHist.length > HIST_MAX) memHist.shift(); return; }
+  try {
+    await new Promise(res => { const tx = store.db.transaction('rec', 'readwrite'); tx.objectStore('rec').put(e, HIST_PRE + e.id); tx.oncomplete = () => res(); tx.onerror = () => res(); });
+  } catch (x) { }
+}
+async function histList(limit = HIST_MAX) {
+  if (store.mode !== 'idb' || !store.db) return [...memHist].reverse().slice(0, limit);
+  try {
+    return await new Promise(res => {
+      const out = []; const tx = store.db.transaction('rec');
+      const rng = IDBKeyRange.bound(HIST_PRE, HIST_PRE + '￿');
+      const cur = tx.objectStore('rec').openCursor(rng, 'prev');
+      cur.onsuccess = e => { const c = e.target.result; if (c && out.length < limit) { out.push(c.value); c.continue(); } else res(out); };
+      cur.onerror = () => res(out);
+    });
+  } catch (x) { return []; }
+}
+async function histTrim() {
+  if (store.mode !== 'idb' || !store.db) return;
+  try {
+    const keys = await new Promise(res => {
+      const out = []; const tx = store.db.transaction('rec');
+      const cur = tx.objectStore('rec').openKeyCursor(IDBKeyRange.bound(HIST_PRE, HIST_PRE + '￿'));
+      cur.onsuccess = e => { const c = e.target.result; if (c) { out.push(c.key); c.continue(); } else res(out); };
+      cur.onerror = () => res(out);
+    });
+    if (keys.length <= HIST_MAX) return;
+    const drop = keys.slice(0, keys.length - HIST_MAX);
+    await new Promise(res => { const tx = store.db.transaction('rec', 'readwrite'); const os = tx.objectStore('rec'); drop.forEach(k => os.delete(k)); tx.oncomplete = () => res(); tx.onerror = () => res(); });
+  } catch (x) { }
+}
+
+function recLabel(coll, r) {
+  try {
+    switch (coll) {
+      case 'sales': return `${PRODUCTS[r.product] || 'ขายยาง'} ${fmt(r.weight, 1)} กก. ${baht(saleCalc(r).net)}`;
+      case 'tapping': return `กรีด ${plotName(r.plotId) || 'ไม่ระบุแปลง'} ${num(r.qty) ? fmt(r.qty, 1) + ' กก.' : ''}`;
+      case 'expenses': return `${r.item || r.cat || 'รายจ่าย'} ${baht(r.amount)}`;
+      case 'incomes': return `${r.cat || 'รายรับ'} ${baht(r.amount)}`;
+      case 'worklogs': return `ค่าแรง ${workerName(r.workerId)} ${baht(wageAmt(r))}`;
+      case 'payments': return `${PAYMENT_TYPES[r.type] || 'จ่ายเงิน'} ${workerName(r.workerId)} ${baht(r.amount)}`;
+      case 'activities': return `${r.type || 'งานดูแลสวน'} ${plotName(r.plotId)}`;
+      case 'health': return `${r.issue || 'สุขภาพต้น'} ${plotName(r.plotId)}`;
+      case 'prices': return `ราคา${PRODUCTS[r.product] || ''} ${fmt(r.price, 2)} บ.`;
+      case 'stock': return `คลัง ${itemOf(r.itemId)?.name || ''} ${fmt(r.qty)}`;
+      case 'events': return r.title || 'นัดหมาย';
+      case 'claims': return r.program || 'สิทธิ กยท.';
+      default: return r.name || r.title || SCHEMA[coll]?.title || coll;
+    }
+  } catch (e) { return SCHEMA[coll]?.title || coll; }
+}
+
+/* บันทึกประวัติทุกครั้งที่บันทึก/ลบ */
+(function hookSave() {
+  const rawSave = saveRec;
+  saveRec = async function (coll, rec, opts = {}) {
+    const before = rec.id ? DB[coll].get(rec.id) : null;
+    const out = await rawSave(coll, rec, opts);
+    try {
+      if (!opts.noHist && !out.demo && SCHEMA[coll]) {
+        const action = !before ? 'create' : (out.deleted && !before.deleted) ? 'delete' : (!out.deleted && before.deleted) ? 'restore' : 'edit';
+        await histPut({ coll, recId: out.id, at: Date.now(), action, label: recLabel(coll, out), before: before ? JSON.parse(JSON.stringify(before)) : null });
+        if (Math.random() < 0.08) histTrim();
+      }
+    } catch (e) { }
+    return out;
+  };
+})();
+
+/* ---------------- จุดกู้คืนในเครื่อง (snapshot) ---------------- */
+const SNAP_PRE = 'snap:';
+const SNAP_KEEP = 4;
+function snapshotData() { const data = {}; COLLS.forEach(c => data[c] = [...DB[c].values()]); return { app: 'rubberfarm', version: APP_VERSION, exportedAt: new Date().toISOString(), data }; }
+function snapCount(s) { return COLLS.reduce((a, c) => a + ((s.data && s.data[c]) || []).length, 0); }
+async function snapPut(name, obj) {
+  if (store.mode !== 'idb' || !store.db) return false;
+  return new Promise(res => { try { const tx = store.db.transaction('meta', 'readwrite'); tx.objectStore('meta').put(obj, SNAP_PRE + name); tx.oncomplete = () => res(true); tx.onerror = () => res(false); } catch (e) { res(false); } });
+}
+async function snapKeys() {
+  if (store.mode !== 'idb' || !store.db) return [];
+  return new Promise(res => {
+    try {
+      const out = []; const tx = store.db.transaction('meta');
+      const cur = tx.objectStore('meta').openKeyCursor(IDBKeyRange.bound(SNAP_PRE, SNAP_PRE + '￿'));
+      cur.onsuccess = e => { const c = e.target.result; if (c) { out.push(String(c.key).slice(SNAP_PRE.length)); c.continue(); } else res(out.sort().reverse()); };
+      cur.onerror = () => res(out);
+    } catch (e) { res([]); }
+  });
+}
+async function snapGet(name) {
+  if (store.mode !== 'idb' || !store.db) return null;
+  return new Promise(res => { try { const tx = store.db.transaction('meta'); const q = tx.objectStore('meta').get(SNAP_PRE + name); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); } catch (e) { res(null); } });
+}
+async function snapDel(name) {
+  if (store.mode !== 'idb' || !store.db) return;
+  return new Promise(res => { try { const tx = store.db.transaction('meta', 'readwrite'); tx.objectStore('meta').delete(SNAP_PRE + name); tx.oncomplete = () => res(); tx.onerror = () => res(); } catch (e) { res(); } });
+}
+async function makeSnapshot(tag = '') {
+  const total = COLLS.reduce((a, c) => a + DB[c].size, 0);
+  if (!total) return null;
+  const name = today() + '_' + nowTime().replace(':', '') + (tag ? '_' + tag : '');
+  const ok = await snapPut(name, snapshotData());
+  if (!ok) return null;
+  const keys = await snapKeys();
+  for (const k of keys.slice(SNAP_KEEP)) await snapDel(k);
+  META.lastSnapAt = Date.now(); await store.putMeta();
+  return name;
+}
+/** สำรองอัตโนมัติสัปดาห์ละครั้ง (ตอนเปิดแอพ เมื่อเครื่องว่าง) */
+function autoSnapshot() {
+  const last = num(META.lastSnapAt);
+  if (Date.now() - last < 7 * 864e5) return;
+  const run = () => makeSnapshot('auto').catch(() => { });
+  if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 8000 }); else setTimeout(run, 4000);
+}
+
+/* ---------------- กู้คืนข้อมูล ---------------- */
+async function restoreRecords(j, mode = 'merge') {
+  if (!j || !j.data) { toast('ไฟล์ไม่ถูกต้อง', 'err'); return 0; }
+  let n = 0;
+  for (const c of COLLS) {
+    const puts = [];
+    (j.data[c] || []).forEach(raw => {
+      const r = coerce(c, raw); if (!r.id) return;
+      const loc = DB[c].get(r.id);
+      const take = mode === 'replace' ? true : (!loc || num(r.updatedAt) > num(loc.updatedAt));
+      if (!take) return;
+      if (mode === 'replace' && loc) r.updatedAt = Math.max(num(r.updatedAt), num(loc.updatedAt) + 1);
+      DB[c].set(r.id, r); puts.push(r);
+      const d = META.dirty[c] || (META.dirty[c] = []); if (!d.includes(r.id)) d.push(r.id);
+      n++;
+    });
+    if (puts.length) await store.putRecs(c, puts);
+  }
+  await store.putMeta();
+  return n;
+}
+
+/* ---------------- ตรวจสุขภาพข้อมูล ---------------- */
+function dataChecks() {
+  const t = today(), out = [];
+  const add = (level, title, detail, goTo) => out.push({ level, title, detail, go: goTo });
+  const s = S();
+
+  // 1. การเชื่อมต่อและซิงค์
+  if (!s.scriptUrl) add('bad', 'ยังไม่ได้เชื่อม Google Sheets', 'ข้อมูลอยู่ในเครื่องนี้เครื่องเดียว ถ้าเครื่องหายหรือลบแอพ ข้อมูลจะหายทั้งหมด', 'settings');
+  else {
+    const n = dirtyCount();
+    const days = META.lastSyncAt ? Math.floor((Date.now() - META.lastSyncAt) / 864e5) : 999;
+    if (n && days >= 3) add('bad', `มี ${n} รายการยังไม่ขึ้น Google Sheets`, `ซิงค์ล่าสุด ${META.lastSyncAt ? days + ' วันที่แล้ว' : 'ยังไม่เคยซิงค์'}`, 'settings');
+    else if (n) add('warn', `รอซิงค์ ${n} รายการ`, 'จะส่งขึ้นเองเมื่อมีอินเทอร์เน็ต', 'settings');
+    else add('ok', 'ซิงค์กับ Google Sheets ครบแล้ว', META.lastSyncAt ? 'ล่าสุด ' + new Date(META.lastSyncAt).toLocaleString('th-TH') : '');
+  }
+  // 2. สำรองไฟล์
+  const bdays = META.lastBackupAt ? Math.floor((Date.now() - META.lastBackupAt) / 864e5) : null;
+  if (bdays === null) add('warn', 'ยังไม่เคยดาวน์โหลดไฟล์สำรอง', 'ควรเก็บไฟล์สำรองไว้ในเครื่องหรือแชทไลน์ตัวเอง อย่างน้อยปีละ 2–3 ครั้ง');
+  else if (bdays > 90) add('warn', `ไฟล์สำรองล่าสุด ${bdays} วันที่แล้ว`, 'ควรดาวน์โหลดไฟล์สำรองใหม่');
+  else add('ok', 'มีไฟล์สำรองล่าสุด', `${bdays} วันที่แล้ว`);
+  // 3. รูปที่ยังไม่อัป
+  const pend = PHOTO_COLLS.reduce((a, c) => a + list(c, r => hasLocalPhotos(r)).length, 0);
+  if (pend) add('warn', `รูป ${pend} รายการยังไม่ขึ้น Google Drive`, 'รูปจะอัปโหลดตอนซิงค์ ถ้าค้างนานให้กดซิงค์ตอนมีเน็ตแรง', 'settings');
+  // 4. ขายที่ไม่ระบุแปลง
+  const noPlot = list('sales', r => !r.plotId && inFarm(r)).length;
+  if (noPlot) add('info', `ขายยาง ${noPlot} ครั้งไม่ได้ระบุแปลง`, 'ถ้าระบุแปลง จะดูกำไรรายแปลงได้แม่นขึ้น', 'sales');
+  // 5. แปลงที่ข้อมูลไม่ครบ
+  const badPlot = list('plots', p => inFarm(p) && (!plotArea(p) || !num(p.trees)));
+  if (badPlot.length) add('warn', `แปลง ${badPlot.length} แปลงยังไม่ได้กรอกพื้นที่หรือจำนวนต้น`, badPlot.map(p => p.name).join(', '), 'plots');
+  // 6. วัสดุติดลบ
+  const negStock = list('items', i => itemStock(i.id) < 0);
+  if (negStock.length) add('warn', `วัสดุ ${negStock.length} รายการคงเหลือติดลบ`, negStock.map(i => `${i.name} (${fmt(itemStock(i.id))})`).join(', '), 'inventory');
+  // 7. วันที่ในอนาคต
+  const future = [];
+  ['sales', 'tapping', 'expenses', 'worklogs'].forEach(c => list(c, r => r.date > addDays(t, 1)).forEach(r => future.push([c, r])));
+  if (future.length) add('warn', `${future.length} รายการมีวันที่เป็นอนาคต`, 'อาจพิมพ์ปีหรือวันผิด: ' + future.slice(0, 3).map(([c, r]) => `${recLabel(c, r)} (${thDate(r.date)})`).join(', '));
+  // 8. ขายซ้ำ
+  const seen = new Map(), dup = [];
+  list('sales').forEach(r => { const k = `${r.date}|${r.product}|${r2(num(r.weight))}|${r2(num(r.price))}`; if (seen.has(k)) dup.push(r); else seen.set(k, r); });
+  if (dup.length) add('warn', `อาจบันทึกขายซ้ำ ${dup.length} รายการ`, dup.slice(0, 3).map(r => `${thDate(r.date)} ${PRODUCTS[r.product] || ''} ${fmt(r.weight, 1)} กก.`).join(', '), 'sales');
+  // 9. ค้างจ่ายนาน
+  const oldOwe = list('workers').map(w => ({ w, L: workerLedger(w.id) })).filter(x => x.L.balance > 0 && x.L.rows.length && diffDays(x.L.rows.filter(r => r.kind === 'pay' || r.kind === 'advance').slice(-1)[0]?.date || x.L.rows[0].date, t) > 60);
+  if (oldOwe.length) add('info', `ค้างจ่ายคนงาน ${oldOwe.length} คนเกิน 60 วัน`, oldOwe.map(x => `${x.w.name} ${baht(x.L.balance)}`).join(', '), 'workers');
+  // 10. ค้างรับเงินค่ายาง
+  const oldRecv = list('sales', r => !r.received && diffDays(r.date, t) > 30);
+  if (oldRecv.length) add('warn', `ยังไม่ได้รับเงินค่ายาง ${oldRecv.length} ครั้ง เกิน 30 วัน`, baht(sum(oldRecv, r => saleCalc(r).net)), 'sales');
+  // 11. รายจ่ายไม่มีหมวด
+  const noCat = list('expenses', r => !r.cat).length;
+  if (noCat) add('info', `รายจ่าย ${noCat} รายการไม่มีหมวดหมู่`, 'ทำให้ดูสัดส่วนต้นทุนไม่ครบ', 'expenses');
+  // 12. ขนาดข้อมูล
+  const total = COLLS.reduce((a, c) => a + list(c).length, 0);
+  add('ok', `ข้อมูลในเครื่อง ${fmt(total, 0)} รายการ`, `เก็บแบบ ${store.mode === 'idb' ? 'IndexedDB (ปลอดภัยกว่า)' : 'localStorage (พื้นที่จำกัด)'}`);
+  return out;
+}
+const LEVEL = { bad: ['red', 'alert', 'ต้องแก้'], warn: ['amber', 'alert', 'ควรดู'], info: ['blue', 'info', 'แนะนำ'], ok: ['', 'check', 'ปกติ'] };
+
+/* ---------------- หน้า: ข้อมูลปลอดภัย ---------------- */
+ROUTES.safety = {
+  title: 'ข้อมูลปลอดภัย/กู้คืน',
+  render(main) {
+    const st = pstate('safety', () => ({ snaps: null, hist: null }));
+    const draw = () => {
+      const checks = dataChecks();
+      const bad = checks.filter(c => c.level === 'bad').length, warn = checks.filter(c => c.level === 'warn').length;
+      const score = Math.max(0, 100 - bad * 30 - warn * 8);
+      const trashN = COLLS.reduce((a, c) => { let n = 0; for (const r of DB[c].values()) if (r.deleted) n++; return a + n; }, 0);
+      main.innerHTML = `
+      <div class="card hero"><div class="small faint">ความปลอดภัยของข้อมูล</div>
+        <div style="font-size:30px;font-weight:700" class="tnum">${score}<span style="font-size:16px">/100</span></div>
+        <div class="small faint">${[bad ? `${bad} เรื่องต้องแก้` : '', warn ? `${warn} เรื่องควรดู` : ''].filter(Boolean).join(' · ') || 'ทุกอย่างเรียบร้อย'}</div></div>
+
+      <div class="card"><h3>${ic('save')} สำรองข้อมูล</h3>
+        <div class="row wrap"><button class="btn pri" id="fBackup">${ic('download')} ดาวน์โหลดไฟล์สำรอง</button>
+        <label class="btn">${ic('upload')} กู้คืนจากไฟล์<input type="file" id="fRestore" accept=".json,application/json" style="display:none"></label>
+        <button class="btn" id="fSnap">${ic('shieldck')} สร้างจุดกู้คืนตอนนี้</button></div>
+        <dl class="kv small" style="margin-top:12px">
+          <dt>ไฟล์สำรองล่าสุด</dt><dd>${META.lastBackupAt ? new Date(META.lastBackupAt).toLocaleString('th-TH') : 'ยังไม่เคย'}</dd>
+          <dt>จุดกู้คืนอัตโนมัติ</dt><dd>${META.lastSnapAt ? new Date(META.lastSnapAt).toLocaleString('th-TH') : 'ยังไม่มี'} (สร้างเองสัปดาห์ละครั้ง เก็บ ${SNAP_KEEP} จุดล่าสุด)</dd>
+          <dt>ถังขยะ</dt><dd>${trashN ? `<button class="lk" data-go="trash">${trashN} รายการที่ลบไว้ — กู้คืนได้</button>` : 'ว่าง'}</dd>
+        </dl>
+        <div class="hint">ไฟล์สำรองเก็บทุกอย่างในไฟล์เดียว เปิดกับแอพนี้ได้ทุกเครื่อง ส่งเก็บไว้ในแชทไลน์ตัวเองก็ได้</div>
+      </div>
+
+      <div class="card"><h3>${ic('undo')} จุดกู้คืนในเครื่อง</h3><div id="snapBox"><div class="small muted">กำลังโหลด...</div></div>
+        <div class="hint">จุดกู้คืนเก็บอยู่ในเครื่องนี้เท่านั้น ถ้าล้างข้อมูลแอพหรือถอนแอพจะหายไปด้วย — ไฟล์สำรองปลอดภัยกว่า</div></div>
+
+      <div class="card"><h3>${ic('shieldck')} ตรวจสุขภาพข้อมูล</h3><div class="list">
+        ${checks.map(c => { const [cls, icn] = LEVEL[c.level]; return itemRow({ go: c.go, icon: icn, cls, t: esc(c.title), d: esc(c.detail || ''), r: c.go ? ic('right') : '' }); }).join('')}
+      </div></div>
+
+      <div class="card"><h3>${ic('clock')} ประวัติการแก้ไขล่าสุด</h3><div id="histBox"><div class="small muted">กำลังโหลด...</div></div>
+        <div class="hint">เก็บ ${HIST_MAX} รายการล่าสุดในเครื่องนี้ ใช้ย้อนกลับเมื่อแก้ผิดหรือลบผิด</div></div>`;
+
+      $('#fBackup', main).onclick = async () => {
+        const j = snapshotData();
+        downloadFile(`สวนยาง_สำรอง_${today()}.json`, JSON.stringify(j), 'application/json');
+        META.lastBackupAt = Date.now(); await store.putMeta();
+        toast(`สำรอง ${fmt(snapCount(j), 0)} รายการแล้ว`, 'ok'); draw();
+      };
+      $('#fRestore', main).onchange = async e => { const f = e.target.files[0]; if (f) await restoreFlow(f); e.target.value = ''; };
+      $('#fSnap', main).onclick = async () => {
+        const b = $('#fSnap', main); b.disabled = true;
+        const n = await makeSnapshot('manual');
+        b.disabled = false;
+        toast(n ? 'สร้างจุดกู้คืนแล้ว' : 'สร้างจุดกู้คืนไม่ได้ (เครื่องนี้ไม่รองรับ)', n ? 'ok' : 'warn');
+        drawSnaps(); draw();
+      };
+      drawSnaps(); drawHist();
+    };
+
+    const drawSnaps = async () => {
+      const keys = await snapKeys(); const box = $('#snapBox', main); if (!box) return;
+      if (!keys.length) return box.innerHTML = `<div class="small muted">ยังไม่มีจุดกู้คืน — กด "สร้างจุดกู้คืนตอนนี้" ด้านบน</div>`;
+      box.innerHTML = `<div class="list">${keys.map(k => {
+        const [d, tm, tag] = k.split('_');
+        return itemRow({ icon: 'shieldck', cls: 'blue', t: esc(thDate(d) + ' ' + (tm ? tm.slice(0, 2) + ':' + tm.slice(2) : '')), d: tag === 'auto' ? 'อัตโนมัติ' : 'สร้างเอง', r: `<span class="badge blue" data-snap="${esc(k)}">กู้คืน</span>` });
+      }).join('')}</div>`;
+      $$('[data-snap]', box).forEach(b => b.onclick = async e => {
+        e.stopPropagation();
+        const j = await snapGet(b.dataset.snap);
+        if (!j) return toast('อ่านจุดกู้คืนไม่ได้', 'err');
+        await restoreConfirm(j, 'จุดกู้คืน ' + b.dataset.snap);
+      });
+    };
+
+    const drawHist = async (limit = 15) => {
+      const rows = await histList(limit); const box = $('#histBox', main); if (!box) return;
+      if (!rows.length) return box.innerHTML = `<div class="small muted">ยังไม่มีประวัติ</div>`;
+      const A = { create: ['เพิ่ม', 'plus', ''], edit: ['แก้ไข', 'edit', 'blue'], delete: ['ลบ', 'trash', 'red'], restore: ['กู้คืน', 'undo', ''] };
+      box.innerHTML = `<div class="list">${rows.map((h, i) => {
+        const [lbl, icn, cls] = A[h.action] || A.edit;
+        return itemRow({ icon: icn, cls, t: `${lbl}: ${esc(h.label || '')}`, d: esc(SCHEMA[h.coll]?.title || h.coll) + ' · ' + new Date(h.at).toLocaleString('th-TH'), r: h.before ? `<span class="badge" data-undo="${i}">ย้อนกลับ</span>` : '' });
+      }).join('')}</div>${rows.length >= limit ? `<button class="btn more-btn" id="histMore">ดูประวัติเพิ่มเติม</button>` : ''}`;
+      const mb = $('#histMore', box); if (mb) mb.onclick = () => drawHist(limit + 45);
+      $$('[data-undo]', box).forEach(b => b.onclick = async e => {
+        e.stopPropagation();
+        const h = rows[num(b.dataset.undo)]; if (!h || !h.before) return;
+        if (!(await confirmBox(`ย้อนกลับ "${h.label}" เป็นเวอร์ชันก่อนหน้า (${new Date(h.at).toLocaleString('th-TH')})?`, 'ย้อนกลับ', false))) return;
+        await saveRec(h.coll, { ...h.before, updatedAt: undefined });
+        toast('ย้อนกลับแล้ว', 'ok'); render();
+      });
+    };
+
+    const restoreFlow = async file => {
+      let j; try { j = JSON.parse(await file.text()); } catch (e) { return toast('ไฟล์เสียหรือไม่ใช่ไฟล์สำรอง', 'err'); }
+      if (!j || !j.data) return toast('ไม่ใช่ไฟล์สำรองของแอพนี้', 'err');
+      await restoreConfirm(j, file.name);
+    };
+
+    const restoreConfirm = async (j, name) => {
+      const rows = COLLS.map(c => [c, ((j.data && j.data[c]) || []).length, DB[c].size]).filter(x => x[1] || x[2]);
+      const ov = openSheet({
+        title: 'กู้คืนข้อมูล',
+        body: `<p class="small">จาก: <b>${esc(name)}</b>${j.exportedAt ? ` · สร้างเมื่อ ${new Date(j.exportedAt).toLocaleString('th-TH')}` : ''}${j.version ? ` · เวอร์ชัน ${esc(j.version)}` : ''}</p>
+        <div class="tbl-wrap"><table class="tbl"><tr><th>ข้อมูล</th><th class="n">ในไฟล์</th><th class="n">ในเครื่อง</th></tr>
+        ${rows.map(([c, a, b]) => `<tr><td>${esc(SCHEMA[c]?.title || c)}</td><td class="n">${fmt(a, 0)}</td><td class="n">${fmt(b, 0)}</td></tr>`).join('')}
+        <tr class="tot"><td>รวม</td><td class="n">${fmt(snapCount(j), 0)}</td><td class="n">${fmt(COLLS.reduce((a, c) => a + DB[c].size, 0), 0)}</td></tr></table></div>
+        <div class="field" style="margin-top:10px"><label class="fl">วิธีกู้คืน</label><div class="seg col">
+          <label><input type="radio" name="rmode" value="merge" checked> รวมข้อมูล — ใช้เวอร์ชันที่ใหม่กว่า (ปลอดภัยที่สุด)</label>
+          <label><input type="radio" name="rmode" value="replace"> ใช้ข้อมูลในไฟล์แทนของเดิม (ทับรายการที่ซ้ำกัน)</label>
+        </div></div>
+        <div class="hint">ทั้งสองแบบจะไม่ลบรายการที่มีเฉพาะในเครื่องนี้ และจะสร้างจุดกู้คืนก่อนเสมอ</div>`,
+        foot: `<button class="btn" data-a="no">ยกเลิก</button><button class="btn pri" data-a="ok">กู้คืน</button>`
+      });
+      ov.querySelector('[data-a=no]').onclick = () => closeSheet(ov, true);
+      ov.querySelector('[data-a=ok]').onclick = async () => {
+        const mode = ov.querySelector('input[name=rmode]:checked').value;
+        closeSheet(ov, true);
+        toast('กำลังกู้คืน...', '');
+        await makeSnapshot('beforerestore');
+        const n = await restoreRecords(j, mode);
+        toast(`กู้คืน ${fmt(n, 0)} รายการแล้ว`, 'ok');
+        render(); scheduleSync();
+      };
+    };
+
+    draw();
+  }
+};
+
+/* ---------------- หน้า: ถังขยะ ---------------- */
+ROUTES.trash = {
+  title: 'ถังขยะ',
+  render(main) {
+    const st = pstate('trash', () => ({ coll: '' }));
+    const draw = () => {
+      const all = [];
+      COLLS.forEach(c => { for (const r of DB[c].values()) if (r.deleted) all.push([c, r]); });
+      all.sort((a, b) => num(b[1].updatedAt) - num(a[1].updatedAt));
+      const counts = {}; all.forEach(([c]) => counts[c] = (counts[c] || 0) + 1);
+      const rows = st.coll ? all.filter(([c]) => c === st.coll) : all;
+      main.innerHTML = `
+      <div class="alert info">${ic('info')}<div>รายการที่ลบจะเก็บไว้ที่นี่ กดกู้คืนได้ตลอด และจะซิงค์กลับขึ้น Google Sheets ให้เอง</div></div>
+      ${all.length ? `<div class="chips"><button class="chip${!st.coll ? ' on' : ''}" data-tc="">ทั้งหมด (${all.length})</button>${Object.entries(counts).map(([c, n]) => `<button class="chip${st.coll === c ? ' on' : ''}" data-tc="${c}">${esc(SCHEMA[c]?.title || c)} (${n})</button>`).join('')}</div>` : ''}
+      ${rows.length ? `<div class="list">${rows.map(([c, r]) => itemRow({ icon: SCHEMA[c]?.icon || 'trash', cls: 'gray', t: esc(recLabel(c, r)), d: `${esc(SCHEMA[c]?.title || c)}${r.date ? ' · ' + thDate(r.date) : ''}`, d2: 'ลบเมื่อ ' + new Date(num(r.updatedAt)).toLocaleString('th-TH'), r: `<span class="badge blue" data-rest="${c}:${r.id}">กู้คืน</span>` })).join('')}</div>`
+          : emptyBox('ถังขยะว่าง', 'trash')}`;
+      $$('[data-tc]', main).forEach(b => b.onclick = () => { st.coll = b.dataset.tc; draw(); });
+      $$('[data-rest]', main).forEach(b => b.onclick = async e => {
+        e.stopPropagation();
+        const [c, id] = b.dataset.rest.split(':'); const r = DB[c].get(id); if (!r) return;
+        await saveRec(c, { ...r, deleted: 0 });
+        toast('กู้คืนแล้ว', 'ok'); draw();
+      });
+    };
+    draw();
+  }
+};
+
+/* ---------------- เพิ่มปุ่มในหน้าตั้งค่า + สำรองอัตโนมัติ ---------------- */
+(function extendSettings() {
+  const raw = ROUTES.settings.render;
+  ROUTES.settings.render = function (main) {
+    raw.call(this, main);
+    const exp = $('#bExp', main);
+    if (exp) {
+      const wrap = exp.parentElement;
+      const b = document.createElement('button');
+      b.className = 'btn'; b.innerHTML = `${ic('shieldck')} ข้อมูลปลอดภัย/กู้คืน`;
+      b.onclick = () => go('safety');
+      wrap.appendChild(b);
+      const rawClick = exp.onclick;
+      exp.onclick = async () => { rawClick && rawClick(); META.lastBackupAt = Date.now(); await store.putMeta(); };
+    }
+  };
+})();
+
+(function bootSafety() {
+  const start = () => { try { autoSnapshot(); } catch (e) { } };
+  if (document.readyState === 'complete') setTimeout(start, 3000);
+  else window.addEventListener('load', () => setTimeout(start, 3000));
+})();
+/* =========================================================
+   v3.3 — งานออกแบบรอบสอง
+   หน้าหลักจัดใหม่ · หน้ารายการสะอาดขึ้น · ฟอร์มกรอกง่าย · ตารางอ่านง่ายบนมือถือ
+   ========================================================= */
+Object.assign(ICONS, {
+  filter: '<path d="M3 5h18l-7 8v6l-4-2v-4z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>',
+});
+
+/* ---------------------------------------------------------
+   1) แถบ 7 วันบนหน้าหลัก — ทำให้อ่านรู้เรื่อง
+   --------------------------------------------------------- */
+weekStrip = function () {
+  const t = today(), days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = addDays(t, -i);
+    days.push({
+      d,
+      kg: sum(list('sales', s => s.date === d && inFarm(s)), estDryKg),
+      tap: list('tapping', r => r.date === d && r.rain !== 'skip' && inFarm(r)).length,
+      skip: list('tapping', r => r.date === d && r.rain === 'skip' && inFarm(r)).length,
+    });
+  }
+  const mx = Math.max(...days.map(x => x.kg));
+  const total = sum(days, x => x.kg);
+  const tapDays = days.filter(x => x.tap).length;
+  const bars = days.filter(x => x.kg).length >= 3;   // ใช้กราฟแท่งเมื่อมีข้อมูลพอ
+  const cell = x => {
+    const inner = bars
+      ? `<span class="trk"><i style="height:${mx && x.kg ? Math.max(3, x.kg / mx * 26).toFixed(0) : 0}px"></i></span>`
+      : `<span class="vbox">${x.kg ? `<b class="tnum">${fmt(x.kg, 0)}</b>` : '<u>·</u>'}</span>`;
+    return `<div class="wd${x.d === t ? ' on' : ''}" title="${thDate(x.d)}${x.kg ? ' · ขาย ' + fmt(x.kg, 0) + ' กก.' : ''}${x.tap ? ' · กรีด ' + x.tap + ' แปลง' : x.skip ? ' · หยุดกรีด' : ''}">
+      <span class="dw">${TH_DOW[parseD(x.d).getDay()]}</span>${inner}<em class="${x.tap ? 'tap' : x.skip ? 'skip' : ''}"></em></div>`;
+  };
+  return `<div class="wkbox">
+    <div class="wkh"><span>7 วันล่าสุด</span><b>${total ? fmt(total, 0) + ' กก.' : 'ยังไม่มีการขาย'}${tapDays ? ` · กรีด ${tapDays} วัน` : ''}</b></div>
+    <div class="week${bars ? ' bars' : ''}">${days.map(cell).join('')}</div>
+    <div class="wkl"><span><em class="tap"></em> วันที่กรีด</span><span><em class="skip"></em> หยุดกรีด</span>${bars ? '' : '<span>ตัวเลข = กก. ที่ขาย</span>'}</div>
+  </div>`;
+};
+
+/* ---------------------------------------------------------
+   2) ตาราง: บนจอแคบแปลงเป็นการ์ดทีละแถว
+   --------------------------------------------------------- */
+function stackTables(root) {
+  $$('.tbl-wrap table.tbl', root).forEach(tb => {
+    if (tb.dataset.st) return;
+    const rows = [...tb.rows];
+    if (!rows.length) return;
+    const head = rows[0];
+    const ths = [...head.cells].filter(c => c.tagName === 'TH');
+    if (ths.length < 4 || head.cells.length !== ths.length) { tb.dataset.st = 0; return; }
+    const labels = ths.map(c => c.textContent.trim());
+    rows.slice(1).forEach(r => {
+      [...r.cells].forEach((c, i) => {
+        if (!i || !labels[i] || c.querySelector(':scope > .lb')) return;
+        const sp = document.createElement('span');
+        sp.className = 'lb'; sp.textContent = labels[i];
+        c.insertBefore(sp, c.firstChild);
+      });
+    });
+    tb.classList.add('stackable');
+    tb.dataset.st = 1;
+  });
+}
+
+/* ---------------------------------------------------------
+   3) หน้ารายการ: รวมแถบควบคุมให้เหลือแถวเดียว + ตัวกรองพับเก็บ
+   --------------------------------------------------------- */
+function tidyListPage(main) {
+  const body = $('#lpBody', main);
+  if (!body || $('.lbar', main)) return;
+  const seg = $('.seg', main), mnav = $('.mnav', main), search = $('.search', main), sum0 = $('.sumbar', main);
+  const chips = $$('.chips', main).find(c => $('[data-chip]', c));
+  if (!seg && !mnav && !chips && !search) return;
+
+  const bar = document.createElement('div');
+  bar.className = 'lbar';
+  const top = document.createElement('div');
+  top.className = 'lbar-top';
+  if (mnav) top.appendChild(mnav);
+  bar.appendChild(top);
+
+  const extra = [seg, chips, search].filter(Boolean);
+  if (extra.length) {
+    const det = document.createElement('details');
+    det.className = 'filters';
+    const sm = document.createElement('summary');
+    det.appendChild(sm);
+    const inner = document.createElement('div');
+    inner.className = 'filters-in';
+    extra.forEach(el => inner.appendChild(el));
+    det.appendChild(inner);
+    bar.appendChild(det);
+    const label = () => {
+      const on = chips && $('.chip.on', chips);
+      const q = search && search.value.trim();
+      const parts = [];
+      if (seg) { const c = $('input[name=pmode]:checked', seg); if (c && c.value !== 'month') parts.push(c.parentElement.textContent.trim()); }
+      if (on && on.dataset.chip) parts.push(on.textContent.trim());
+      if (q) parts.push('ค้นหา "' + q + '"');
+      sm.innerHTML = `${ic('filter')}<span>${parts.length ? esc(parts.join(' · ')) : 'ตัวกรองและการค้นหา'}</span>${parts.length ? '<b class="dot"></b>' : ''}`;
+    };
+    label();
+    if (search) search.addEventListener('input', debounce(label, 260));
+    if (chips) chips.addEventListener('click', () => setTimeout(label, 0));
+    det.open = !!(search && search.value.trim());
+  }
+  body.parentElement.insertBefore(bar, body);
+  if (sum0) bar.after(sum0);
+}
+
+/* ---------------------------------------------------------
+   4) ฟอร์ม: วันที่แบบไทย + แถบสรุปติดขอบล่าง + โฟกัสช่องแรก
+   --------------------------------------------------------- */
+const DOW_SHORT = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+function thaiDateLabel(v) {
+  if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return 'เลือกวันที่';
+  const n = diffDays(v, today());
+  const rel = n === 0 ? 'วันนี้' : n === 1 ? 'เมื่อวาน' : n === -1 ? 'พรุ่งนี้' : '';
+  return `${DOW_SHORT[parseD(v).getDay()]} ${thDate(v, true)}${rel ? ` · ${rel}` : ''}`;
+}
+function decorateDates(root) {
+  let firstDate = true;
+  $$('input[type=date]', root).forEach(inp => {
+    if (inp.dataset.th) return;
+    inp.dataset.th = 1;
+    const wrap = document.createElement('span');
+    wrap.className = 'dwrap';
+    inp.parentElement.insertBefore(wrap, inp);
+    wrap.appendChild(inp);
+    const lab = document.createElement('span');
+    lab.className = 'dlabel';
+    wrap.appendChild(lab);
+    const paint = () => { lab.textContent = thaiDateLabel(inp.value); wrap.classList.toggle('empty', !inp.value); };
+    inp.addEventListener('input', paint); inp.addEventListener('change', paint);
+    paint();
+    // ปุ่มลัด วันนี้ / เมื่อวาน (เฉพาะช่องวันที่หลักของฟอร์ม)
+    const f = firstDate ? inp.closest('.field') : null;
+    firstDate = false;
+    if (f && !$('.dquick', f)) {
+      const q = document.createElement('div');
+      q.className = 'dquick';
+      q.innerHTML = `<button type="button" data-d="0">วันนี้</button><button type="button" data-d="-1">เมื่อวาน</button><button type="button" data-d="-2">2 วันก่อน</button>`;
+      f.appendChild(q);
+      $$('button', q).forEach(b => b.onclick = () => {
+        inp.value = addDays(today(), num(b.dataset.d));
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+  });
+}
+function polishSheet(ov) {
+  if (!ov || ov.dataset.p33) return;
+  ov.dataset.p33 = 1;
+  decorateDates(ov);
+  stackTables(ov);
+  markSticky(ov);
+  // โฟกัสช่องตัวเลขสำคัญช่องแรกที่ยังว่าง
+  setTimeout(() => {
+    if ($('.overlay input:focus')) return;
+    const first = $$('.sheet-b input.inp', ov).find(i => !i.value && (i.type === 'number' || i.inputMode === 'decimal') && !i.disabled);
+    if (first && window.innerHeight > 560) { try { first.focus({ preventScroll: true }); } catch (e) { } }
+  }, 120);
+}
+/** ย้ายกล่องสรุปผลคำนวณมาไว้เหนือปุ่มบันทึก ให้เห็นตลอดเวลาที่กรอก */
+function markSticky(ov) {
+  const pv = $('.sheet-b .pv', ov), sheet = $('.sheet', ov), foot = $('.sheet-f', ov);
+  if (pv && sheet && foot) { pv.classList.add('pv-dock'); sheet.insertBefore(pv, foot); }
+}
+
+(function hookSheet() {
+  const raw = openSheet;
+  openSheet = function (cfg) {
+    const ov = raw(cfg);
+    try { polishSheet(ov); hydratePhotos(ov); } catch (e) { }
+    try {
+      const mo = new MutationObserver(debounce(() => { try { decorateDates(ov); stackTables(ov); } catch (e) { } }, 60));
+      mo.observe(ov, { childList: true, subtree: true });
+      ov.addEventListener('DOMNodeRemovedFromDocument', () => mo.disconnect());
+    } catch (e) { }
+    return ov;
+  };
+})();
+
+/* ---------------------------------------------------------
+   5) หน้าหลัก: จัดลำดับใหม่ + ย่อส่วนหัว
+   --------------------------------------------------------- */
+(function homeDesign() {
+  const raw = ROUTES.home.render;
+  ROUTES.home.render = function (main) {
+    raw.call(this, main);
+    if (route.name !== 'home') return;
+    // ย้ายการ์ด "รอบกรีดวันนี้" ขึ้นมาอยู่ใต้ hero ทันที (งานของวันนี้สำคัญกว่าตัวเลขเดือน)
+    const hero = $('.card.hero', main);
+    const due = $$('.card', main).find(c => /รอบกรีดวันนี้/.test(c.querySelector('h3')?.textContent || ''));
+    const quick = $('.quick', main);
+    if (hero && due && quick && due.compareDocumentPosition(quick) & Node.DOCUMENT_POSITION_PRECEDING) hero.after(due);
+    // ป้ายหัวข้อของแถวปุ่มลัด
+    if (quick && !quick.previousElementSibling?.classList?.contains('qhead')) {
+      const h = document.createElement('div');
+      h.className = 'sec-title qhead';
+      h.innerHTML = `${ic('plus')} บันทึกเร็ว`;
+      quick.before(h);
+    }
+  };
+})();
+
+/* ---------------------------------------------------------
+   6) ต่อท้าย render ทุกครั้ง
+   --------------------------------------------------------- */
+let _polishing = false;
+function polish33(main) {
+  if (!main || _polishing) return;
+  _polishing = true;
+  try { stackTables(main); } catch (e) { }
+  try { tidyListPage(main); } catch (e) { }
+  try { decorateDates(main); } catch (e) { }
+  _polishing = false;
+}
+(function wrapRender33() {
+  const raw = render;
+  render = function () {
+    raw.apply(this, arguments);
+    polish33($('#main'));
+  };
+  // หน้าที่วาดใหม่เองข้างใน (เปลี่ยนเดือน/ตัวกรอง/แท็บ) ต้องจัดหน้าตาใหม่ด้วย
+  const start = () => {
+    const main = $('#main'); if (!main) return setTimeout(start, 300);
+    const mo = new MutationObserver(debounce(() => polish33(main), 80));
+    mo.observe(main, { childList: true, subtree: true });
+    polish33(main);
+  };
+  if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', start); else start();
+})();
 </script>
 </body>
 </html>
