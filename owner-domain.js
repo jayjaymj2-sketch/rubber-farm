@@ -103,6 +103,63 @@ var Farm36 = (() => {
     if (coll === 'health' && deleting && rows(s, 'healthchecks').some(x => x.healthId === r.id)) return 'มีประวัติติดตามกรณีนี้ ให้ลบรายการติดตามก่อน';
     return '';
   }
+  function similarSales(s, r) {
+    const name = value => String(value || '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
+    return rows(s, 'sales').filter(x => x.id !== r.id && x.date === r.date && farm(s, x) === farm(s, r) && name(x.buyer) === name(r.buyer) && x.product === r.product && Math.abs(n(x.weight) - n(r.weight)) < .001 && Math.abs(sale(x).gross - sale(r).gross) < .01);
+  }
+  // Payments are farm-specific credits against the oldest claims, including wages.
+  // This is an allocation for reporting, never a replacement for payment evidence.
+  function workerAllocation(s, cutoff = '9999-12-31', farmId = 'all') {
+    const groups = {}, bySale = {};
+    const belongs = r => r.date <= cutoff && (farmId === 'all' || farm(s, r) === farmId);
+    const group = (workerId, r) => groups[JSON.stringify([workerId, farm(s, r)])] ||= { workerId, farmId: farm(s, r), claims: [], credits: 0 };
+    rows(s, 'sales').filter(belongs).forEach(r => {
+      const c = sale(r); bySale[r.id] = { earned: c.tapperTotal, settled: 0, remaining: 0, workers: {} };
+      c.ids.forEach(id => group(id, r).claims.push({ saleId: r.id, id: r.id, date: r.date, at: n(r.createdAt), amount: c.per[id] }));
+    });
+    rows(s, 'worklogs').filter(belongs).forEach(r => group(r.workerId, r).claims.push({ id: r.id, date: r.date, at: n(r.createdAt), amount: Math.max(0, round(n(r.days) * n(r.wage))) }));
+    rows(s, 'payments').filter(belongs).forEach(r => {
+      const g = group(r.workerId, r);
+      if (r.type === 'adjust' && n(r.amount) > 0) g.claims.push({ id: r.id, date: r.date, at: n(r.createdAt), amount: n(r.amount) });
+      else g.credits += r.type === 'adjust' ? -n(r.amount) : n(r.amount);
+    });
+    Object.values(groups).forEach(g => {
+      let credit = Math.max(0, round(g.credits));
+      g.claims.sort((a, b) => a.date.localeCompare(b.date) || a.at - b.at || String(a.id).localeCompare(String(b.id)));
+      g.claims.forEach(claim => {
+        const paid = round(Math.min(claim.amount, credit)); credit = round(credit - paid);
+        if (!claim.saleId) return;
+        const result = bySale[claim.saleId], remaining = round(claim.amount - paid);
+        result.workers[g.workerId] = { earned: claim.amount, settled: paid, remaining };
+        result.settled = round(result.settled + paid); result.remaining = round(result.remaining + remaining);
+      });
+    });
+    return bySale;
+  }
+  function cashOwnership(s, cashNet, cutoff, farmId = 'all') {
+    const allocation = workerAllocation(s, cutoff, farmId), groups = {};
+    rows(s, 'sales').filter(r => r.date <= cutoff && (farmId === 'all' || farm(s, r) === farmId)).forEach(r => {
+      const c = sale(r), received = Math.min(c.net, totalSettled(s, 'receive', r, cutoff));
+      c.ids.forEach(id => {
+        const key = JSON.stringify([id, farm(s, r)]), g = groups[key] ||= { received: 0, settled: 0, remaining: 0 };
+        g.received += c.net > 0 ? c.per[id] * received / c.net : 0;
+        g.settled += allocation[r.id]?.workers[id]?.settled || 0; g.remaining += allocation[r.id]?.workers[id]?.remaining || 0;
+      });
+    });
+    const workerReserve = round(Object.values(groups).reduce((total, g) => total + Math.max(0, Math.min(g.remaining, g.received - g.settled)), 0));
+    return { cashNet: round(cashNet), workerReserve, ownerCash: round(cashNet - workerReserve), shortfall: round(Math.max(0, workerReserve - cashNet)) };
+  }
+  function filterSales(s, sales, options, cutoff = '9999-12-31') {
+    const allocation = workerAllocation(s, cutoff, options.farmId || 'all');
+    const query = String(options.query || '').normalize('NFC').trim().toLowerCase();
+    return sales.filter(r => {
+      if (options.workerId && !arr(r.workerIds).includes(options.workerId)) return false;
+      const searchable = [r.buyer, r.date, r.lotNo, (s.plots || {})[r.plotId]?.name, ...arr(r.workerIds).map(id => (s.workers || {})[id]?.name)].join(' ').normalize('NFC').toLowerCase();
+      if (query && !searchable.includes(query)) return false;
+      const owed = outstanding(s, 'receive', r, cutoff), workerOwed = allocation[r.id]?.remaining ?? sale(r).tapperTotal;
+      return !options.status || options.status === 'receive' && owed > 0 || options.status === 'received' && owed <= 0 || options.status === 'worker' && workerOwed > 0 || options.status === 'workerPaid' && sale(r).tapperTotal > 0 && workerOwed <= 0;
+    });
+  }
   function buyers(s, from, to, farmId = 'all') {
     const groups = {};
     rows(s, 'sales').filter(r => r.date >= from && r.date <= to && (farmId === 'all' || farm(s, r) === farmId)).forEach(r => {
@@ -131,5 +188,5 @@ var Farm36 = (() => {
     const farmId = farm(s, r), plotId = coll === 'plots' ? r.id : r.plotId;
     return (!farms.length || farms.includes(farmId)) && (!plots.length || plots.includes(plotId));
   }
-  return { n, round, arr, yes, live, rows, dateOK, sale, settlementRows, totalSettled, outstanding, lot, farm, error, buyers, access };
+  return { n, round, arr, yes, live, rows, dateOK, sale, settlementRows, totalSettled, outstanding, lot, farm, error, buyers, access, similarSales, workerAllocation, cashOwnership, filterSales };
 })();

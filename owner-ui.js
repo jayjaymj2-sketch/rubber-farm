@@ -4,7 +4,7 @@ function input36(id, label, value = '', type = 'number', attrs = '') {
   return `<div class="field"><label class="fl" for="${id}">${label}</label><input class="inp" id="${id}" type="${type}" value="${esc(value)}" ${type === 'number' ? 'inputmode="decimal" step="any" min="0"' : ''} ${attrs}></div>`;
 }
 const option36 = (value, label, selected) => `<option value="${esc(value)}"${value === selected ? ' selected' : ''}>${esc(label)}</option>`;
-const photoStrip = refs => `<div class="photos">${Farm36.arr(refs).map(ref => `<div class="ph"><img data-ref="${esc(ref)}" alt="รูปติดตามต้นยาง"></div>`).join('')}</div>`;
+const photoStrip = refs => `<div class="photos">${Farm36.arr(refs).map(ref => `<div class="ph"><img data-ref="${esc(ref)}" alt="รูปแนบ"></div>`).join('')}</div>`;
 function bindSave36(ov, fn) {
   $('[data-save]', ov).onclick = async e => { const b = e.currentTarget; b.disabled = true; try { await fn(); } catch (err) { toast(err.message, 'warn'); } finally { if (b.isConnected) b.disabled = false; } };
 }
@@ -15,13 +15,14 @@ function workerPayment36(id = '') {
   $('#payWorker36', ov).parentElement.insertAdjacentHTML('beforebegin', `<div class="field"${multiFarm() ? '' : ' hidden'}><label class="fl" for="payFarm36">สวนที่จ่ายเงิน</label><select class="inp" id="payFarm36">${list('farms').map(f => option36(f.id, f.name, defFarm())).join('')}</select></div>`);
   const balanceFor = id => sum(workerLedger(id).rows.filter(x => farmOf(DB[x.coll].get(x.id)) === $('#payFarm36', ov).value), 'amt');
   const update = () => { const id = $('#payWorker36', ov).value, balance = balanceFor(id); $('#payBalance36', ov).textContent = 'ส่วนแบ่ง/ค่าแรงคงค้างของสวนที่เลือก ' + baht(balance); $('#payAmount36', ov).value = Math.max(0, balance); };
+  if (typeof attachEvidence37 === 'function') attachEvidence37(ov, 'payment', $('.fields', ov) || $('#payMethod36', ov).parentElement.parentElement, 'สลิปจ่ายคนกรีด');
   $('#payWorker36', ov).onchange = update; $('#payFarm36', ov).onchange = update; update(); $('[data-cancel]', ov).onclick = () => closeSheet(ov, true);
   bindSave36(ov, async () => {
     const amount = num($('#payAmount36', ov).value); if (!(amount > 0)) throw new Error('กรอกจำนวนเงินที่จ่าย');
     if (!Farm36.dateOK($('#payDate36', ov).value)) throw new Error('เลือกวันที่จ่าย');
     const workerId = $('#payWorker36', ov).value;
     if (amount > Math.max(0, balanceFor(workerId)) && !(await confirmBox('ยอดนี้เกินเงินค้าง ส่วนที่เกินจะเป็นเงินจ่ายล่วงหน้า ยืนยันหรือไม่?', 'จ่ายเงิน'))) return;
-    await saveRec('payments', { date: $('#payDate36', ov).value, farmId: $('#payFarm36', ov).value, workerId, amount, method: $('#payMethod36', ov).value, type: 'pay', note: 'จ่ายส่วนแบ่งคนกรีด' }); closeSheet(ov, true); toast('บันทึกจ่ายเงินแล้ว', 'ok'); render();
+    await saveRec('payments', { date: $('#payDate36', ov).value, farmId: $('#payFarm36', ov).value, workerId, amount, method: $('#payMethod36', ov).value, type: 'pay', note: 'จ่ายส่วนแบ่งคนกรีด', photos: ov.photoRefs37?.payment || [] }); closeSheet(ov, true); toast('บันทึกจ่ายเงินแล้ว', 'ok'); render();
   });
 }
 quickSale = function () {
@@ -56,7 +57,7 @@ quickSale = function () {
   };
   const draft = () => ({ date: $('#saleDate36', ov).value, farmId: $('#saleFarm36', ov).value, plotId: $('#salePlot36', ov).value, buyer: $('#saleBuyer36', ov).value.trim(),
     product: $('#saleProduct36', ov).value, weight: num($('#saleWeight36', ov).value), price: num($('#salePrice36', ov).value), drc: $('#saleDrc36', ov).value, priceBasis: $('#saleBasis36', ov).value,
-    split: 'share', workerIds: $$('input[name=saleWorker36]:checked', ov).map(x => x.value), ownerPct: 55, shareMode: 'equal', sharedCost: 0, deduct: num($('#saleDeduct36', ov).value),
+    photos: ov.photoRefs37?.sale || [], split: 'share', workerIds: $$('input[name=saleWorker36]:checked', ov).map(x => x.value), ownerPct: 55, shareMode: 'equal', sharedCost: 0, deduct: num($('#saleDeduct36', ov).value),
     transportCost: num($('#saleTransport36', ov).value), transportPayer: $('#salePayer36', ov).value, transportMethod: $('#saleTransportMethod36', ov).value,
     installments: true, received: false, dueDate: $('#saleDue36', ov).value, lotNo: nextLotNo($('#saleDate36', ov).value),
     lotAllocations: $$('[data-lot36]:checked', ov).map(x => ({ lotId: x.dataset.lot36, kg: num($(`[data-lotkg36="${x.dataset.lot36}"]`, ov).value) })) });
@@ -74,13 +75,13 @@ quickSale = function () {
     const d = draft(), status = $('#saleReceived36', ov).value, error = saleError35(d); if (error) throw new Error(error); if (!status) throw new Error('เลือกสถานะรับเงิน');
     if (!Farm36.dateOK(d.date)) throw new Error('เลือกวันที่ขาย');
     d.id = uid(); const entries = [['sales', d]];
-    if (status !== 'none') { const amount = num($('#saleReceipt36', ov).value); if (!(amount > 0)) throw new Error('กรอกจำนวนเงินที่รับ'); entries.push(['settlements', { kind: 'receive', saleId: d.id, farmId: d.farmId, date: $('#saleReceiveDate36', ov).value, amount, method: 'เงินสด' }]); }
+    if (status !== 'none') { const amount = num($('#saleReceipt36', ov).value); if (!(amount > 0)) throw new Error('กรอกจำนวนเงินที่รับ'); entries.push(['settlements', { kind: 'receive', saleId: d.id, farmId: d.farmId, date: $('#saleReceiveDate36', ov).value, amount, method: 'เงินสด', photos: ov.photoRefs37?.receipt || [] }]); }
     if (d.transportCost && d.transportMethod === 'separate' && $('#saleTransportPaid36', ov).value === 'yes') entries.push(['settlements', { kind: 'transport', saleId: d.id, farmId: d.farmId, date: d.date, amount: d.transportCost, method: 'เงินสด' }]);
     await saveBatch36(entries);
     try { await SCHEMA.sales.afterSave?.(get('sales', d.id), true); } catch (_) { toast('ยอดขายเก็บแล้ว แต่ยังอัปเดตราคาประวัติไม่ได้', 'warn'); }
     try { localStorage.setItem('rf_last_sales', JSON.stringify({ product: d.product, buyer: d.buyer, farmId: d.farmId, plotId: d.plotId, workerIds: d.workerIds, split: 'share', ownerPct: 55, priceBasis: d.priceBasis })); } catch (_) { /* The sale is already committed; remembering defaults is optional. */ }
     closeSheet(ov, true); toast('บันทึกขายแล้ว · ส่วนของพ่อ ' + baht(saleCalc(d).ownerAfterTransport), 'ok'); go('ownerSale', d.id);
-  }); update(); $('#saleWeight36', ov).focus();
+  }); update(); if (typeof enhanceSale37 === 'function') enhanceSale37(ov, draft, update); $('#saleWeight36', ov).focus();
 };
 const salesBefore36 = ROUTES.sales;
 ROUTES.sales = { title: 'ขายยางและส่วนของพ่อ', render(main) {
@@ -95,8 +96,9 @@ async function settlementSheet36(c, record, kind) {
     const parent = await enableInstallments36(c, record), owed = Farm36.outstanding(state36(), kind, parent);
     if (!owed) return toast(kind === 'receive' ? 'รับเงินครบแล้ว' : 'จ่ายครบแล้ว', 'ok');
     const ov = openSheet({ title: kind === 'receive' ? 'รับเงินค่ายาง' : kind === 'transport' ? 'จ่ายค่ารถ' : 'จ่ายรายจ่าย', body: `<div class="preview">คงค้าง ${baht(owed)}</div>${input36('settleDate36', 'วันที่รับ/จ่ายจริง', today(), 'date')}${input36('settleAmount36', 'จำนวนเงินครั้งนี้ (บาท)', owed)}<div class="field"><label class="fl">ช่องทาง</label><select class="inp" id="settleMethod36"><option>เงินสด</option><option>โอนเงิน</option></select></div>${input36('settleNote36', 'หมายเหตุ', '', 'text')}`, foot: '<button class="btn" data-cancel>ยกเลิก</button><button class="btn pri" data-save>บันทึก</button>' });
+    if (typeof attachEvidence37 === 'function') attachEvidence37(ov, 'settlement', $('#settleNote36', ov).parentElement.parentElement, 'หลักฐานรับ/จ่าย');
     $('[data-cancel]', ov).onclick = () => closeSheet(ov, true);
-    bindSave36(ov, async () => { await saveRec('settlements', { date: $('#settleDate36', ov).value, amount: num($('#settleAmount36', ov).value), kind, farmId: farmOf(parent), ...(c === 'sales' ? { saleId: parent.id } : { expenseId: parent.id }), method: $('#settleMethod36', ov).value, note: $('#settleNote36', ov).value }); closeSheet(ov, true); toast('บันทึกเงินแล้ว', 'ok'); render(); });
+    bindSave36(ov, async () => { await saveRec('settlements', { date: $('#settleDate36', ov).value, amount: num($('#settleAmount36', ov).value), kind, farmId: farmOf(parent), ...(c === 'sales' ? { saleId: parent.id } : { expenseId: parent.id }), method: $('#settleMethod36', ov).value, note: $('#settleNote36', ov).value, photos: ov.photoRefs37?.settlement || [] }); closeSheet(ov, true); toast('บันทึกเงินแล้ว', 'ok'); render(); });
   } catch (e) { toast(e.message, 'warn'); }
 }
 function allocationSheet36(sale) {
