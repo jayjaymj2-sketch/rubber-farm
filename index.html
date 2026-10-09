@@ -473,6 +473,38 @@ body:has(.overlay) .toasts{bottom:auto;top:calc(env(safe-area-inset-top) + 64px)
 /* ชื่อรายการและตัวเลขสรุป: ให้ขึ้นบรรทัดใหม่แทนการตัดคำทิ้ง */
 .item .t{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .sumbar .s .v{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}
+
+/* ===== v3.4 ตัวช่วยตั้งค่า + บันทึกเร็ว ===== */
+.wz-head{margin-bottom:12px}
+.wz-bar{display:flex;gap:5px;margin-bottom:10px}
+.wz-bar i{flex:1;height:5px;border-radius:99px;background:var(--line)}
+.wz-bar i.on{background:var(--pri)}
+.wz-bar i.done{background:var(--pri2)}
+.wz-t{display:flex;flex-direction:column;gap:2px}
+.wz-t b{font-size:17px}
+.wz-foot{display:flex;gap:10px;margin-top:16px;position:sticky;bottom:calc(var(--nav-h) + 8px + env(safe-area-inset-bottom));z-index:5;padding:10px 0;background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.wz-foot .btn{flex:1;justify-content:center;height:48px;font-size:16px}
+.wz-foot .btn.pri{flex:1.4}
+.wz-item{padding:10px 0;border-bottom:1px solid var(--line)}
+.wz-item:last-child{border-bottom:0}
+.wz-cta .btn.block{margin-top:10px;height:48px;font-size:16px}
+.lk.neg{color:var(--red)}
+
+.qkbar{display:grid;gap:8px;margin-bottom:12px;grid-template-columns:1fr}
+.qkbar:has(.qk+.qk){grid-template-columns:1fr 1fr}
+.qk{display:flex;align-items:center;gap:10px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow);cursor:pointer;min-height:62px}
+.qk svg{width:26px;height:26px;flex-shrink:0;color:var(--pri)}
+.qk span{display:flex;flex-direction:column;font-size:14px;font-weight:600;min-width:0}
+.qk span b{font-size:11.5px;font-weight:400;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qk.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+.qk.pri svg{color:#fff}
+.qk.pri span b{color:rgba(255,255,255,.85)}
+.qs-head{background:var(--pri-soft);color:var(--pri-ink,var(--pri));border-radius:12px;padding:9px 12px;margin-bottom:12px;font-size:14px}
+.toast.undo{display:flex;align-items:center;gap:14px}
+.toast.undo button{background:rgba(255,255,255,.2);color:#fff;border:0;border-radius:9px;padding:6px 12px;font-weight:700;cursor:pointer}
+.duebtns{margin-top:10px;gap:8px}
+.duebtns .btn{flex:1;justify-content:center;min-height:46px}
+.duebtns .btn.pri{flex:1.6}
 </style>
 </head>
 <body>
@@ -482,7 +514,7 @@ body:has(.overlay) .toasts{bottom:auto;top:calc(env(safe-area-inset-top) + 64px)
 /* =========================================================
    สวนยางพารา — แอพบริหารจัดการสวนยาง (Offline-first PWA)
    ========================================================= */
-const APP_VERSION = '3.3.0';
+const APP_VERSION = '3.6.1';
 // ▼ ใส่ URL ของ Apps Script และรหัส API ตรงนี้ เพื่อให้ทุกเครื่องตั้งค่าอัตโนมัติ (ไม่บังคับ)
 const EMBED = { scriptUrl: '', apiKey: '' };
 
@@ -585,7 +617,7 @@ const VARIETIES = ['RRIT 251', 'RRIM 600', 'RRIT 408', 'RRIT 226', 'RRIT 3904', 
 const TAP_SYSTEMS = ['1/2S d2 (ครึ่งต้น วันเว้นวัน)', '1/2S 2d3 (ครึ่งต้น 2 วันเว้นวัน)', '1/2S d3 (ครึ่งต้น วันเว้น 2 วัน)', '1/3S d2 (หนึ่งในสาม วันเว้นวัน)', '1/3S 2d3', '1/3S d1 (หนึ่งในสาม ทุกวัน)', 'อื่นๆ'];
 
 /* ---------------- storage (IndexedDB + fallback) ---------------- */
-const COLLS = ['farms', 'plots', 'workers', 'tapping', 'sales', 'worklogs', 'payments', 'expenses', 'incomes', 'items', 'stock', 'activities', 'health', 'prices', 'events', 'claims'];
+const COLLS = ['farms', 'plots', 'workers', 'tapping', 'sales', 'worklogs', 'payments', 'expenses', 'incomes', 'items', 'stock', 'activities', 'health', 'prices', 'events', 'claims', 'closings'];
 const PHOTO_COLLS = ['health', 'expenses', 'claims', 'activities', 'sales'];
 const DB = {}; COLLS.forEach(c => DB[c] = new Map());
 let META = { settings: {}, dirty: {}, lastPull: 0 };
@@ -642,9 +674,9 @@ const store = {
 
 const S = () => {
   const s = META.settings || (META.settings = {});
-  return Object.assign({ ownerPct: 60, dailyWage: 350, lat: 18.3609, lon: 103.6464, place: 'บึงกาฬ', theme: 'auto', autoSync: true, expCats: DEFAULT_EXP_CATS.join('\n'), scriptUrl: EMBED.scriptUrl, apiKey: EMBED.apiKey, bagKg: 50, simple: false, refYield: 250, cupDrc: 50, autoPrice: true }, s);
+  return Object.assign({ ownerPct: 55, ownerView: true, transportPayer: 'shared', dailyWage: 350, lat: 18.3609, lon: 103.6464, place: 'บึงกาฬ', theme: 'auto', autoSync: true, expCats: DEFAULT_EXP_CATS.join('\n'), scriptUrl: EMBED.scriptUrl, apiKey: EMBED.apiKey, bagKg: 50, simple: false, refYield: 250, cupDrc: 50, autoPrice: true }, s);
 };
-const setS = async patch => { META.settings = Object.assign(META.settings || {}, patch); await store.putMeta(); };
+const setS = async patch => dataLock35(async () => { const meta = clone35(META); meta.settings = Object.assign(meta.settings || {}, patch); await commit35({}, meta); });
 const expCats = () => String(S().expCats || '').split('\n').map(x => x.trim()).filter(Boolean);
 const role = () => (S().scriptUrl && META.auth && META.auth.role) || 'owner';
 const canEdit = () => role() !== 'viewer';
@@ -709,19 +741,23 @@ async function uploadPendingPhotos() {
   photoErr = '';
   for (const c of PHOTO_COLLS) {
     for (const id of [...((META.dirty || {})[c] || [])]) {
-      const r = DB[c].get(id); if (!r || !hasLocalPhotos(r)) continue;
+      const r = DB[c].get(id); if (!r || !hasLocalPhotos(r) || META.conflicts?.[c + '|' + id]) continue;
       const out = []; let changed = false;
       for (const ref of r.photos) {
         if (!isLocalRef(ref)) { out.push(ref); continue; }
         const dataUrl = await store.photo('get', ref);
-        if (!dataUrl) { changed = true; continue; }
+        if (!dataUrl) { photoErr = 'ไม่พบรูปที่รออัปโหลด กรุณากู้คืนรูปจากไฟล์สำรอง'; out.push(ref); continue; }
         try {
           const res = await api('photoUpload', { dataUrl, name: c + '-' + id });
-          const nref = 'd:' + res.id; await store.photo('put', nref, dataUrl); await store.photo('del', ref);
+          const nref = 'd:' + res.id; await store.photo('put', nref, dataUrl);
           out.push(nref); changed = true;
         } catch (e) { photoErr = e.message; out.push(ref); }
       }
-      if (changed) { const nr = { ...r, photos: out, updatedAt: Math.max(Date.now(), num(r.updatedAt) + 1) }; DB[c].set(id, nr); await store.putRecs(c, [nr]); }
+      if (changed) {
+        const cur = DB[c].get(id); const replacements = new Map(r.photos.map((ref, i) => [ref, out[i]]));
+        const nr = { ...cur, photos: (cur.photos || []).map(ref => replacements.get(ref) || ref) };
+        await saveRec(c, nr, { photoOnly: true, noHist: true });
+      }
     }
   }
 }
@@ -737,7 +773,7 @@ function coerce(coll, rec) {
     let v = r[f.k];
     if (v === undefined || v === null) continue;
     if (f.t === 'num') r[f.k] = v === '' ? '' : num(v);
-    else if (f.t === 'mref' || f.t === 'photos') { if (typeof v === 'string') { try { v = v ? JSON.parse(v) : []; } catch (e) { v = v.split(',').filter(Boolean); } } r[f.k] = Array.isArray(v) ? v : []; }
+    else if (f.t === 'mref' || f.t === 'mchk' || f.t === 'photos') { if (typeof v === 'string') { try { v = v ? JSON.parse(v) : []; } catch (e) { v = v.split(',').filter(Boolean); } } r[f.k] = Array.isArray(v) ? v : []; }
     else if (f.t === 'shares' || f.t === 'obj') { if (typeof v === 'string') { try { v = v ? JSON.parse(v) : {}; } catch (e) { v = {}; } } r[f.k] = v && typeof v === 'object' ? v : {}; }
     else if (f.t === 'chk') r[f.k] = v === true || v === 'true' || String(v) === '1';
     else if (f.t === 'date') { if (typeof v === 'string' && v.length > 10) r[f.k] = v.slice(0, 10); else r[f.k] = String(v); }
@@ -974,7 +1010,7 @@ function promptPayPayload(id, amount) {
 }
 /* ---------------- domain helpers ---------------- */
 let curFarm = (() => { try { return localStorage.getItem('rf_farm') || 'all'; } catch (e) { return 'all'; } })();
-const farmOf = r => r.farmId || get('plots', r.plotId)?.farmId || '';
+const farmOf = r => r?.farmId || get('plots', r?.plotId)?.farmId || (list('farms').length === 1 ? list('farms')[0].id : '');
 const inFarm = r => curFarm === 'all' || farmOf(r) === curFarm;
 const plotName = id => get('plots', id)?.name || '';
 const farmName = id => get('farms', id)?.name || '';
@@ -1009,7 +1045,8 @@ function saleCalc(r) {
   const custom = r.shareMode === 'custom' && ids.length > 1 && r.shares && typeof r.shares === 'object';
   const wts = {}; let tot = 0;
   ids.forEach(id => { wts[id] = custom && r.shares[id] !== undefined && r.shares[id] !== '' ? num(r.shares[id]) : 1; tot += wts[id]; });
-  const per = {}; ids.forEach(id => per[id] = tot ? r2(tapperTotal * wts[id] / tot) : 0);
+  const per = {}; let allocated = 0;
+  ids.forEach((id, i) => { per[id] = tot ? (i === ids.length - 1 ? r2(tapperTotal - allocated) : r2(tapperTotal * wts[id] / tot)) : 0; allocated = r2(allocated + per[id]); });
   const pctOf = {}; ids.forEach(id => pctOf[id] = tot ? r2(wts[id] * 100 / tot) : 0);
   return { payKg: r2(payKg), dryKg: r2(dryKg), gross, net, base, ownerPct, tapperTotal, perTapper, per, pctOf, custom, ownerNet: r2(net - tapperTotal), ids };
 }
@@ -1140,7 +1177,7 @@ const SCHEMA = {
       { k: 'phone', l: 'เบอร์โทร', t: 'tel', half: 1 },
       { k: 'startDate', l: 'เริ่มงาน', t: 'date', half: 1 },
       { k: 'payType', l: 'รูปแบบการจ้าง', t: 'seg', opt: PAY_TYPES, def: 'share', req: 1, re: 1 },
-      { k: 'ownerPct', l: 'สัดส่วนเจ้าของ', t: 'num', suf: '%', half: 1, def: () => S().ownerPct, show: d => d.payType === 'share', hint: 'เช่น 60 = เจ้าของ 60 / คนกรีด 40' },
+      { k: 'ownerPct', l: 'สัดส่วนเจ้าของ', t: 'num', suf: '%', half: 1, def: () => S().ownerPct, show: d => d.payType === 'share', hint: 'เช่น 55 = เจ้าของ 55 / คนกรีด 45' },
       { k: 'dailyWage', l: 'ค่าแรงรายวัน', t: 'num', suf: 'บาท', half: 1, def: () => S().dailyWage, show: d => d.payType !== 'family' },
       { k: 'plotIds', l: 'แปลงที่รับผิดชอบ', t: 'mref', coll: 'plots', label: p => p.name },
       { k: 'bank', l: 'ช่องทางรับเงิน', t: 'text', ph: 'เช่น พร้อมเพย์ 08x-xxx-xxxx' },
@@ -1434,7 +1471,7 @@ function fieldHtml(f, d) {
     case 'photo': inner = `<div class="photo-box">${v ? `<img src="${esc(v)}" alt="">` : ''}<label class="btn sm">${ic('camera')} ${v ? 'เปลี่ยนรูป' : 'ถ่าย/เลือกรูป'}<input type="file" accept="image/*" capture="environment" style="display:none"></label>${v ? '<button type="button" class="btn sm danger" data-clearphoto>ลบรูป</button>' : ''}</div>`; break;
     case 'gps': return `<div class="field" data-gps><button type="button" class="btn sm">${ic('pin')} ใช้ตำแหน่ง GPS ปัจจุบัน</button></div>`;
     default: {
-      const type = f.t === 'num' ? 'number' : f.t === 'tel' ? 'tel' : f.t === 'date' ? 'date' : f.t === 'time' ? 'time' : 'text';
+      const type = f.t === 'num' ? 'number' : f.t === 'tel' ? 'tel' : f.t === 'date' ? 'date' : f.t === 'month' ? 'month' : f.t === 'time' ? 'time' : 'text';
       const suf = f.sufFn ? f.sufFn(d) : f.suf;
       const dl = f.dl ? `<datalist id="dl_${f.k}">${f.dl(d).slice(0, 50).map(x => `<option value="${esc(x)}">`).join('')}</datalist>` : '';
       inner = `<div class="inp-wrap"><input class="inp${suf ? ' has-suf' : ''}" id="${id}" type="${type}"${f.t === 'num' ? ' inputmode="decimal" step="any"' : ''}${f.dl ? ` list="dl_${f.k}"` : ''} value="${esc(v ?? '')}" placeholder="${esc(f.ph || '')}" autocomplete="off">${suf ? `<span class="suf">${esc(suf)}</span>` : ''}</div>${dl}`;
@@ -1562,7 +1599,8 @@ function openForm(coll, rec, preset = {}, after) {
   const del = $('[data-a=del]', ov);
   if (del) del.onclick = async () => {
     if (!(await confirmBox(`ลบ${sch.title}รายการนี้?`, 'ลบ'))) return;
-    await delRec(coll, rec.id); closeSheet(ov, true); toast('ลบแล้ว');
+    try { await delRec(coll, rec.id); } catch (e) { return; }
+    closeSheet(ov, true); toast('ลบแล้ว');
     if (sch.afterDelete) { try { await sch.afterDelete(rec); } catch (e) { console.error(e); } }
     render(); after && after(null);
   };
@@ -1575,10 +1613,11 @@ function openForm(coll, rec, preset = {}, after) {
     }
     const err = sch.validate && sch.validate(d); if (err) { toast(err, 'warn'); return; }
     // hidden fields: clear values that don't apply
-    sch.fields.forEach(f => { if (f.show && !f.show(d) && f.t !== 'gps') { if (f.t === 'mref' || f.t === 'mchk' || f.t === 'photos') { if (f.t !== 'photos') d[f.k] = []; } else if (f.t === 'shares') d[f.k] = {}; else if (f.t !== 'chk') d[f.k] = ''; } });
+    sch.fields.forEach(f => { if (f.show && !f.show(d) && f.t !== 'gps' && f.k !== 'farmId') { if (f.t === 'mref' || f.t === 'mchk' || f.t === 'photos') { if (f.t !== 'photos') d[f.k] = []; } else if (f.t === 'shares') d[f.k] = {}; else if (f.t !== 'chk') d[f.k] = ''; } });
     if (d.shares && typeof d.shares === 'object' && Array.isArray(d.workerIds)) Object.keys(d.shares).forEach(k => { if (!d.workerIds.includes(k)) delete d.shares[k]; });
     delete d._gps;
-    let saved; try { saved = await saveRec(coll, d); } catch (e) { return; }
+    saveBtn.disabled = true;
+    let saved; try { saved = await saveRec(coll, d); } catch (e) { saveBtn.disabled = false; return; }
     if (sch.afterSave) { try { await sch.afterSave(saved, isNew); } catch (e) { console.error(e); } }
     if (sch.remember) { const m = {}; sch.remember.forEach(k => m[k] = d[k]); try { localStorage.setItem('rf_last_' + coll, JSON.stringify(m)); } catch (e) { } }
     closeSheet(ov, true); toast('บันทึกแล้ว', 'ok'); render(); after && after(saved);
@@ -1895,7 +1934,7 @@ ROUTES.home = {
     const rem = reminders(14);
     const low = list('items', i => num(i.minQty) > 0 && itemStock(i.id) <= num(i.minQty));
     const sick = list('health', h => h.status !== 'resolved' && inFarm(h));
-    const unpaidSales = list('sales', s => !s.received && inFarm(s));
+    const unpaidSales = list('sales', s => saleOwed36(s) > 0 && inFarm(s));
     let al = '';
     rem.slice(0, 6).forEach(r => al += itemRow({ open: r.open, icon: r.icon, cls: r.date < t ? 'red' : r.date === t ? 'amber' : 'blue', t: esc(r.text), d: esc(r.sub), r: `<span class="badge ${r.date < t ? 'red' : r.date === t ? 'amber' : 'blue'}">${relDay(r.date)}</span>`, rs: thDate(r.date) }));
     if (owed > 0) al += itemRow({ go: 'workers', icon: 'wallet', cls: 'amber', t: 'ค้างจ่ายคนงาน', d: list('workers', w => workerLedger(w.id).balance > 0).map(w => w.name).join(', '), r: baht(owed) });
@@ -1958,7 +1997,7 @@ const ROWS = {
     const c = saleCalc(r);
     return itemRow({
       open: 'sales:' + r.id, icon: 'coins', cls: { latex: 'blue', usss: 'amber', rss: 'violet', scrap: 'gray' }[r.product] || '',
-      t: `${PRODUCTS[r.product] || ''} ${fmt(r.weight, 1)} กก.` + (!r.received ? ' <span class="badge amber">ค้างรับเงิน</span>' : ''),
+      t: `${PRODUCTS[r.product] || ''} ${fmt(r.weight, 1)} กก.` + (saleOwed36(r) > 0 ? ' <span class="badge amber">ค้างรับเงิน</span>' : ''),
       d: esc([r.buyer, `${fmt(r.price, 2)} บ./กก.${r.priceBasis === 'dry' && shareProduct(r) ? ' (แห้ง)' : ''}`, num(r.drc) ? `DRC ${fmt(r.drc)}%` : ''].filter(Boolean).join(' · ')),
       d2: esc([route.name === 'home' ? thDate(r.date) : '', plotName(r.plotId), r.split === 'share' ? `แบ่ง ${fmt(c.ownerPct)}/${fmt(100 - c.ownerPct)} ${names(r.workerIds)}` : ''].filter(Boolean).join(' · ')),
       r: baht(c.ownerNet), rcls: 'pos', rs: r.split === 'share' ? `ขาย ${baht(c.net)}` : ''
@@ -2287,7 +2326,7 @@ ROUTES.reports = {
       const plotStats = plots.map(p => {
         const inP = r => r.plotId === p.id && r.date >= a && r.date <= b;
         const sales = list('sales', inP), sc = sales.map(saleCalc);
-        return { p, area: plotArea(p), days: new Set(list('tapping', r => inP(r) && r.rain !== 'skip').map(r => r.date)).size, kg: sum(sales, 'weight'), dry: sum(sc, 'dryKg'), owner: sum(sc, 'ownerNet'), cost: sum(list('expenses', inP), 'amount') + sum(list('worklogs', inP), wageAmt) };
+        return { p, area: plotArea(p), days: new Set(list('tapping', r => inP(r) && r.rain !== 'skip').map(r => r.date)).size, kg: sum(sales, 'weight'), dry: sum(sc, 'dryKg'), owner: sum(sc, 'ownerNet'), cost: sum(list('expenses', inP), 'amount') + sum(list('worklogs', inP), wageAmt) + sum(sales.filter(r => r.transportMethod === 'separate'), 'transportCost') };
       });
       const noPlotKg = sum(list('sales', r => !r.plotId && r.date >= a && r.date <= b && inFarm(r)), 'weight');
       // workers
@@ -4618,7 +4657,7 @@ function plotStatsRange(from, to, farm = curFarm) {
     const M = new Map(); const mk = id => { let x = M.get(id); if (!x) M.set(id, x = { kg: 0, dry: 0, gross: 0, net: 0, ownerNet: 0, tapper: 0, wages: 0, expenses: 0, other: 0, days: new Set(), salesN: 0 }); return x; };
     plots.forEach(p => mk(p.id));
     const un = mk('');
-    for (const r of rangeRows('sales', from, to, farm)) { const x = mk(r.plotId || ''); const c = saleCalc(r); x.kg += num(r.weight); x.dry += c.dryKg; x.gross += c.gross; x.net += c.net; x.ownerNet += c.ownerNet; x.tapper += c.tapperTotal; x.salesN++; }
+    for (const r of rangeRows('sales', from, to, farm)) { const x = mk(r.plotId || ''); const c = saleCalc(r); x.kg += num(r.weight); x.dry += c.dryKg; x.gross += c.gross; x.net += c.net; x.ownerNet += c.ownerNet; x.tapper += c.tapperTotal; if (r.transportMethod === 'separate') x.expenses += num(r.transportCost); x.salesN++; }
     for (const r of rangeRows('tapping', from, to, farm)) { if (r.rain === 'skip') continue; mk(r.plotId || '').days.add(r.date); }
     for (const r of rangeRows('worklogs', from, to, farm)) mk(r.plotId || '').wages += wageAmt(r);
     for (const r of rangeRows('payments', from, to, farm)) if (r.type === 'adjust') mk(r.plotId || '').wages += num(r.amount);
@@ -5092,8 +5131,8 @@ function dataChecks() {
   const oldOwe = list('workers').map(w => ({ w, L: workerLedger(w.id) })).filter(x => x.L.balance > 0 && x.L.rows.length && diffDays(x.L.rows.filter(r => r.kind === 'pay' || r.kind === 'advance').slice(-1)[0]?.date || x.L.rows[0].date, t) > 60);
   if (oldOwe.length) add('info', `ค้างจ่ายคนงาน ${oldOwe.length} คนเกิน 60 วัน`, oldOwe.map(x => `${x.w.name} ${baht(x.L.balance)}`).join(', '), 'workers');
   // 10. ค้างรับเงินค่ายาง
-  const oldRecv = list('sales', r => !r.received && diffDays(r.date, t) > 30);
-  if (oldRecv.length) add('warn', `ยังไม่ได้รับเงินค่ายาง ${oldRecv.length} ครั้ง เกิน 30 วัน`, baht(sum(oldRecv, r => saleCalc(r).net)), 'sales');
+  const oldRecv = list('sales', r => saleOwed36(r) > 0 && diffDays(r.date, t) > 30);
+  if (oldRecv.length) add('warn', `ยังไม่ได้รับเงินค่ายาง ${oldRecv.length} ครั้ง เกิน 30 วัน`, baht(sum(oldRecv, saleOwed36)), 'sales');
   // 11. รายจ่ายไม่มีหมวด
   const noCat = list('expenses', r => !r.cat).length;
   if (noCat) add('info', `รายจ่าย ${noCat} รายการไม่มีหมวดหมู่`, 'ทำให้ดูสัดส่วนต้นทุนไม่ครบ', 'expenses');
@@ -5128,7 +5167,7 @@ ROUTES.safety = {
           <dt>จุดกู้คืนอัตโนมัติ</dt><dd>${META.lastSnapAt ? new Date(META.lastSnapAt).toLocaleString('th-TH') : 'ยังไม่มี'} (สร้างเองสัปดาห์ละครั้ง เก็บ ${SNAP_KEEP} จุดล่าสุด)</dd>
           <dt>ถังขยะ</dt><dd>${trashN ? `<button class="lk" data-go="trash">${trashN} รายการที่ลบไว้ — กู้คืนได้</button>` : 'ว่าง'}</dd>
         </dl>
-        <div class="hint">ไฟล์สำรองเก็บทุกอย่างในไฟล์เดียว เปิดกับแอพนี้ได้ทุกเครื่อง ส่งเก็บไว้ในแชทไลน์ตัวเองก็ได้</div>
+        <div class="hint">เลือกสำรองพร้อมรูปเพื่อย้ายเครื่องได้ครบ รูปที่ยังไม่ได้อัปโหลดจะรวมไว้ด้วยเสมอ</div>
       </div>
 
       <div class="card"><h3>${ic('undo')} จุดกู้คืนในเครื่อง</h3><div id="snapBox"><div class="small muted">กำลังโหลด...</div></div>
@@ -5156,6 +5195,7 @@ ROUTES.safety = {
         drawSnaps(); draw();
       };
       drawSnaps(); drawHist();
+      backupUi35(main);
     };
 
     const drawSnaps = async () => {
@@ -5179,7 +5219,7 @@ ROUTES.safety = {
       const A = { create: ['เพิ่ม', 'plus', ''], edit: ['แก้ไข', 'edit', 'blue'], delete: ['ลบ', 'trash', 'red'], restore: ['กู้คืน', 'undo', ''] };
       box.innerHTML = `<div class="list">${rows.map((h, i) => {
         const [lbl, icn, cls] = A[h.action] || A.edit;
-        return itemRow({ icon: icn, cls, t: `${lbl}: ${esc(h.label || '')}`, d: esc(SCHEMA[h.coll]?.title || h.coll) + ' · ' + new Date(h.at).toLocaleString('th-TH'), r: h.before ? `<span class="badge" data-undo="${i}">ย้อนกลับ</span>` : '' });
+        return itemRow({ icon: icn, cls, t: `${lbl}: ${esc(h.label || '')}`, d: esc(SCHEMA[h.coll]?.title || h.coll) + ' · ' + new Date(h.at).toLocaleString('th-TH'), d2: h.reason ? 'เหตุผล: ' + esc(h.reason) : '', r: h.before ? `<span class="badge" data-undo="${i}">ย้อนกลับ</span>` : '' });
       }).join('')}</div>${rows.length >= limit ? `<button class="btn more-btn" id="histMore">ดูประวัติเพิ่มเติม</button>` : ''}`;
       const mb = $('#histMore', box); if (mb) mb.onclick = () => drawHist(limit + 45);
       $$('[data-undo]', box).forEach(b => b.onclick = async e => {
@@ -5217,10 +5257,12 @@ ROUTES.safety = {
         const mode = ov.querySelector('input[name=rmode]:checked').value;
         closeSheet(ov, true);
         toast('กำลังกู้คืน...', '');
-        await makeSnapshot('beforerestore');
-        const n = await restoreRecords(j, mode);
-        toast(`กู้คืน ${fmt(n, 0)} รายการแล้ว`, 'ok');
-        render(); scheduleSync();
+        try {
+          await makeSnapshot('beforerestore');
+          const n = await restoreRecords(j, mode);
+          toast(`กู้คืน ${fmt(n, 0)} รายการแล้ว`, 'ok');
+          render(); scheduleSync();
+        } catch (e) { toast('กู้คืนไม่สำเร็จ: ' + e.message, 'err'); }
       };
     };
 
@@ -5515,6 +5557,497 @@ function polish33(main) {
   };
   if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', start); else start();
 })();
+/* =========================================================
+   v3.4 — เริ่มใช้งานง่าย และบันทึกเร็ว
+   ตัวช่วยตั้งค่าครั้งแรก (#start) · กรีดวันนี้กดครั้งเดียว · ขายเร็ว · ทำซ้ำ
+   ========================================================= */
+Object.assign(ICONS, {
+  wand: '<path d="M4 20L16 8"/><path d="M14 4l1 2.5L17.5 7.5 15 8.5 14 11l-1-2.5L10.5 7.5 13 6.5z"/><path d="M19 13l.7 1.6 1.8.6-1.8.7-.7 1.6-.7-1.6-1.8-.7 1.8-.6z"/>',
+  bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  repeat: '<path d="M4 9a5 5 0 0 1 5-5h11"/><path d="M17 1l3 3-3 3"/><path d="M20 15a5 5 0 0 1-5 5H4"/><path d="M7 23l-3-3 3-3"/>',
+});
+
+/* ---------------------------------------------------------
+   ตัวช่วยตั้งค่าครั้งแรก
+   --------------------------------------------------------- */
+const WZ_KEY = 'rf_wizard';
+function wzState() {
+  try { return JSON.parse(localStorage.getItem(WZ_KEY) || 'null') || null; } catch (e) { return null; }
+}
+function wzSave(st) { try { localStorage.setItem(WZ_KEY, JSON.stringify(st)); } catch (e) { } }
+function wzClear() { try { localStorage.removeItem(WZ_KEY); } catch (e) { } }
+const wzNew = () => ({
+  step: 0, done: false,
+  farm: { name: '', district: '', province: 'บึงกาฬ', owner: '', lat: '', lon: '' },
+  plots: [],
+  workers: [],
+  sale: { product: 'cuplump', buyer: '', priceBasis: 'wet', ownerPct: 55 },
+});
+
+const WZ_STEPS = [
+  { k: 'farm', t: 'สวนของคุณ', s: 'ชื่อสวนและที่ตั้ง' },
+  { k: 'plots', t: 'แปลงยาง', s: 'พื้นที่ จำนวนต้น ปีที่ปลูก' },
+  { k: 'workers', t: 'คนกรีด/คนงาน', s: 'ใครกรีด แบ่งกันยังไง' },
+  { k: 'sale', t: 'การขายยาง', s: 'ขายอะไร ที่ไหน' },
+  { k: 'go', t: 'พร้อมใช้งาน', s: 'ตรวจความถูกต้องแล้วเริ่มเลย' },
+];
+
+ROUTES.start = {
+  title: 'ตั้งค่าครั้งแรก',
+  render(main) {
+    let st = wzState();
+    if (!st) { st = wzNew(); wzSave(st); }
+    const save = () => wzSave(st);
+    const go2 = n => { st.step = Math.max(0, Math.min(WZ_STEPS.length - 1, n)); save(); draw(); window.scrollTo(0, 0); };
+
+    const head = () => `<div class="wz-head">
+      <div class="wz-bar">${WZ_STEPS.map((s, i) => `<i class="${i < st.step ? 'done' : i === st.step ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="wz-t"><b>ขั้นที่ ${st.step + 1} จาก ${WZ_STEPS.length} · ${esc(WZ_STEPS[st.step].t)}</b><span class="small muted">${esc(WZ_STEPS[st.step].s)}</span></div>
+    </div>`;
+
+    const foot = (nextLabel = 'ถัดไป', nextOk = true) => `<div class="wz-foot">
+      ${st.step > 0 ? `<button class="btn" id="wzBack">${ic('back')} ย้อนกลับ</button>` : `<button class="btn" id="wzSkip">ข้ามไปก่อน</button>`}
+      <button class="btn pri" id="wzNext"${nextOk ? '' : ' disabled'}>${esc(nextLabel)} ${ic('right')}</button>
+    </div>`;
+
+    /* ---- ขั้นที่ 1: สวน ---- */
+    const stepFarm = () => `<div class="card"><div class="fields">
+      <div class="field"><label class="fl" for="wfName">ชื่อสวน *</label><input class="inp" id="wfName" value="${esc(st.farm.name)}" placeholder="เช่น สวนบ้านโนนสว่าง"></div>
+      <div class="field half"><label class="fl" for="wfDis">อำเภอ/ตำบล</label><input class="inp" id="wfDis" value="${esc(st.farm.district)}"></div>
+      <div class="field half"><label class="fl" for="wfPro">จังหวัด</label><input class="inp" id="wfPro" value="${esc(st.farm.province)}"></div>
+      <div class="field"><label class="fl" for="wfOwn">ชื่อเจ้าของสวน</label><input class="inp" id="wfOwn" value="${esc(st.farm.owner)}" placeholder="ใช้ในเอกสาร กยท./EUDR"></div>
+      <div class="field"><label class="fl">พิกัดสวน (ใช้พยากรณ์อากาศและเตือนฝนก่อนกรีด)</label>
+        <div class="row wrap"><button class="btn" id="wfGps">${ic('pin')} ใช้ตำแหน่งปัจจุบัน</button><span class="small muted" id="wfGpsT">${st.farm.lat ? `บันทึกแล้ว (${fmt(st.farm.lat, 4)}, ${fmt(st.farm.lon, 4)})` : 'ยังไม่ได้ตั้ง — ข้ามได้'}</span></div></div>
+    </div></div>
+    <div class="hint">ยืนอยู่ในสวนแล้วกด “ใช้ตำแหน่งปัจจุบัน” จะแม่นที่สุด ถ้าตอนนี้ไม่ได้อยู่สวน ข้ามไปก่อนได้ แก้ทีหลังที่หน้าสวน</div>`;
+
+    /* ---- ขั้นที่ 2: แปลง ---- */
+    const plotRow = (p, i) => `<div class="wz-item"><div class="row"><b>${esc(p.name || 'แปลงที่ ' + (i + 1))}</b><span class="sp"></span>
+      <button class="lk small" data-ped="${i}">แก้ไข</button><button class="lk small neg" data-pdel="${i}">ลบ</button></div>
+      <div class="small muted">${fmt(p.rai || 0, 2)} ไร่ · ${p.trees ? fmt(p.trees, 0) + ' ต้น' : 'ไม่ระบุจำนวนต้น'} · ${p.plantYear ? 'ปลูก ' + p.plantYear : 'ไม่ระบุปีปลูก'} · ${PLOT_STATUS[p.status] || ''}</div></div>`;
+    const stepPlots = () => `
+      ${st.plots.length ? `<div class="card">${st.plots.map(plotRow).join('')}</div>` : emptyBox('ยังไม่มีแปลง — กดปุ่มด้านล่างเพื่อเพิ่มแปลงแรก', 'leaf')}
+      <button class="btn block" id="wzAddPlot">${ic('plus')} เพิ่มแปลง</button>
+      <div class="hint">ถ้าสวนเป็นผืนเดียว ใส่แปลงเดียวก็พอ · แยกแปลงเมื่ออยากดูกำไรแยกกัน หรือกรีดคนละรอบ</div>`;
+
+    /* ---- ขั้นที่ 3: คนงาน ---- */
+    const wkRow = (w, i) => `<div class="wz-item"><div class="row"><b>${esc(w.name || 'คนที่ ' + (i + 1))}</b><span class="sp"></span>
+      <button class="lk small" data-wed="${i}">แก้ไข</button><button class="lk small neg" data-wdel="${i}">ลบ</button></div>
+      <div class="small muted">${w.payType === 'share' ? `แบ่งสัดส่วน · เจ้าของ ${fmt(w.ownerPct)}% / คนกรีด ${fmt(100 - num(w.ownerPct))}%` : w.payType === 'daily' ? `จ้างรายวัน ${baht(w.dailyWage)}/วัน` : 'คนในครอบครัว'}</div></div>`;
+    const stepWorkers = () => `
+      ${st.workers.length ? `<div class="card">${st.workers.map(wkRow).join('')}</div>` : emptyBox('ยังไม่มีคนงาน — ถ้ากรีดเอง ข้ามขั้นนี้ได้', 'users')}
+      <button class="btn block" id="wzAddWk">${ic('plus')} เพิ่มคนกรีด/คนงาน</button>
+      <div class="hint">กรีดเอง/คนในบ้านช่วยกัน เลือก “คนในครอบครัว” ได้ แอพจะไม่คิดส่วนแบ่งให้</div>`;
+
+    /* ---- ขั้นที่ 4: การขาย ---- */
+    const stepSale = () => `<div class="card"><div class="fields">
+      <div class="field"><label class="fl">ขายยางแบบไหนเป็นหลัก</label>
+        <div class="chips">${Object.entries(PRODUCTS).map(([k, l]) => `<button class="chip${st.sale.product === k ? ' on' : ''}" data-wprod="${k}">${esc(l)}</button>`).join('')}</div></div>
+      <div class="field"><label class="fl" for="wsBuyer">ร้าน/ลานรับซื้อประจำ</label><input class="inp" id="wsBuyer" value="${esc(st.sale.buyer)}" placeholder="เช่น ลานเจ๊หน่อย"></div>
+      <div class="field"><label class="fl">วิธีคิดราคา</label><div class="seg">
+        <label><input type="radio" name="wsBasis" value="wet"${st.sale.priceBasis !== 'dry' ? ' checked' : ''}>บาท/กก. ตามน้ำหนักชั่ง</label>
+        <label><input type="radio" name="wsBasis" value="dry"${st.sale.priceBasis === 'dry' ? ' checked' : ''}>บาท/กก. เนื้อยางแห้ง</label></div></div>
+      ${st.workers.some(w => w.payType === 'share') ? `<div class="field half"><label class="fl" for="wsPct">สัดส่วนเจ้าของเวลาขาย</label><div class="inp-wrap"><input class="inp has-suf" id="wsPct" type="number" inputmode="decimal" value="${esc(st.sale.ownerPct)}"><span class="suf">%</span></div></div>` : ''}
+    </div></div>
+    <div class="hint">ค่าเหล่านี้จะถูกเติมให้อัตโนมัติทุกครั้งที่บันทึกการขาย แก้ตอนบันทึกได้เสมอ</div>`;
+
+    /* ---- ขั้นที่ 5: สรุป ---- */
+    const stepGo = () => {
+      const s = S();
+      const area = sum(st.plots, p => num(p.rai) + num(p.ngan) / 4 + num(p.wa) / 400);
+      const trees = sum(st.plots, 'trees');
+      return `<div class="card hero"><div class="small faint">พร้อมสร้างข้อมูลเริ่มต้น</div>
+        <div style="font-size:22px;font-weight:700;margin:4px 0">${esc(st.farm.name || 'สวนของคุณ')}</div>
+        <div class="small faint">${st.plots.length} แปลง · ${fmt(area, 2)} ไร่${trees ? ` · ${fmt(trees, 0)} ต้น` : ''}${st.workers.length ? ` · ${st.workers.length} คน` : ''}</div></div>
+      <div class="card"><h3>${ic('check')} จะสร้างให้</h3><div class="list">
+        ${itemRow({ icon: 'map', t: esc(st.farm.name || '-'), d: esc([st.farm.district, st.farm.province].filter(Boolean).join(' · ')), r: 'สวน' })}
+        ${st.plots.map(p => itemRow({ icon: 'leaf', cls: 'blue', t: esc(p.name), d: `${fmt(num(p.rai) + num(p.ngan) / 4 + num(p.wa) / 400, 2)} ไร่${p.trees ? ' · ' + fmt(p.trees, 0) + ' ต้น' : ''}`, r: 'แปลง' })).join('')}
+        ${st.workers.map(w => itemRow({ icon: 'users', cls: 'violet', t: esc(w.name), d: w.payType === 'share' ? `แบ่ง ${fmt(w.ownerPct)}/${fmt(100 - num(w.ownerPct))}` : w.payType === 'daily' ? baht(w.dailyWage) + '/วัน' : 'ครอบครัว', r: 'คนงาน' })).join('')}
+      </div></div>
+      ${!s.scriptUrl ? `<div class="alert amber">${ic('alert')}<div><b>ยังไม่ได้เชื่อม Google Sheets</b><div class="small">ข้อมูลจะอยู่ในเครื่องนี้เครื่องเดียว ถ้าเครื่องหายข้อมูลหายหมด — <button class="lk" data-go="settings">เชื่อมตอนนี้</button></div></div></div>`
+          : `<div class="alert">${ic('check')}<div class="small">เชื่อม Google Sheets แล้ว ข้อมูลจะสำรองขึ้นคลาวด์อัตโนมัติ</div></div>`}
+      <div class="hint">กด “สร้างและเริ่มใช้งาน” แล้วแก้ไขทีหลังได้ทุกอย่าง</div>`;
+    };
+
+    const draw = () => {
+      const body = [stepFarm, stepPlots, stepWorkers, stepSale, stepGo][st.step]();
+      const okFarm = !!st.farm.name.trim();
+      const nextLabel = st.step === WZ_STEPS.length - 1 ? 'สร้างและเริ่มใช้งาน' : 'ถัดไป';
+      main.innerHTML = head() + body + foot(nextLabel, st.step !== 0 || okFarm);
+      setFab(null);
+
+      const grab = () => {
+        if (st.step === 0) {
+          st.farm.name = ($('#wfName', main) || {}).value?.trim() ?? st.farm.name;
+          st.farm.district = ($('#wfDis', main) || {}).value?.trim() ?? st.farm.district;
+          st.farm.province = ($('#wfPro', main) || {}).value?.trim() ?? st.farm.province;
+          st.farm.owner = ($('#wfOwn', main) || {}).value?.trim() ?? st.farm.owner;
+        }
+        if (st.step === 3) {
+          st.sale.buyer = ($('#wsBuyer', main) || {}).value?.trim() ?? st.sale.buyer;
+          const bs = $('input[name=wsBasis]:checked', main); if (bs) st.sale.priceBasis = bs.value;
+          const pc = $('#wsPct', main); if (pc) st.sale.ownerPct = num(pc.value);
+        }
+        save();
+      };
+
+      const nm = $('#wfName', main);
+      if (nm) nm.oninput = () => { st.farm.name = nm.value.trim(); save(); const b = $('#wzNext', main); if (b) b.disabled = !st.farm.name; };
+      const gps = $('#wfGps', main);
+      if (gps) gps.onclick = () => {
+        if (!navigator.geolocation) return toast('เครื่องนี้ไม่รองรับ GPS', 'warn');
+        gps.disabled = true; $('#wfGpsT', main).textContent = 'กำลังหาตำแหน่ง...';
+        navigator.geolocation.getCurrentPosition(p => {
+          st.farm.lat = r2(p.coords.latitude * 1e6) / 1e6; st.farm.lon = r2(p.coords.longitude * 1e6) / 1e6; save();
+          gps.disabled = false; $('#wfGpsT', main).textContent = `บันทึกแล้ว (${fmt(st.farm.lat, 4)}, ${fmt(st.farm.lon, 4)})`;
+        }, () => { gps.disabled = false; $('#wfGpsT', main).textContent = 'หาตำแหน่งไม่ได้ ข้ามไปก่อนได้'; }, { enableHighAccuracy: true, timeout: 12000 });
+      };
+
+      const addPlot = $('#wzAddPlot', main); if (addPlot) addPlot.onclick = () => plotSheet();
+      $$('[data-ped]', main).forEach(b => b.onclick = () => plotSheet(num(b.dataset.ped)));
+      $$('[data-pdel]', main).forEach(b => b.onclick = async () => { if (await confirmBox('ลบแปลงนี้ออกจากรายการ?', 'ลบ')) { st.plots.splice(num(b.dataset.pdel), 1); save(); draw(); } });
+      const addWk = $('#wzAddWk', main); if (addWk) addWk.onclick = () => wkSheet();
+      $$('[data-wed]', main).forEach(b => b.onclick = () => wkSheet(num(b.dataset.wed)));
+      $$('[data-wdel]', main).forEach(b => b.onclick = async () => { if (await confirmBox('ลบคนนี้ออกจากรายการ?', 'ลบ')) { st.workers.splice(num(b.dataset.wdel), 1); save(); draw(); } });
+      $$('[data-wprod]', main).forEach(b => b.onclick = () => { grab(); st.sale.product = b.dataset.wprod; save(); draw(); });
+
+      const back = $('#wzBack', main); if (back) back.onclick = () => { grab(); go2(st.step - 1); };
+      const skip = $('#wzSkip', main); if (skip) skip.onclick = () => { grab(); go('home'); };
+      $('#wzNext', main).onclick = async () => {
+        grab();
+        if (st.step === 0 && !st.farm.name) return toast('ใส่ชื่อสวนก่อนครับ', 'warn');
+        if (st.step === WZ_STEPS.length - 1) return finish();
+        go2(st.step + 1);
+      };
+    };
+
+    /* แผ่นกรอกแปลง */
+    const plotSheet = (idx) => {
+      const p = idx === undefined
+        ? { name: '', rai: '', ngan: '', wa: '', trees: '', plantYear: '', status: 'tapping', tapSystem: TAP_SYSTEMS[0], variety: '' }
+        : { ...st.plots[idx] };
+      const ov = openSheet({
+        title: idx === undefined ? 'เพิ่มแปลง' : 'แก้ไขแปลง',
+        body: `<div class="fields">
+          <div class="field"><label class="fl" for="pName">ชื่อแปลง *</label><input class="inp" id="pName" value="${esc(p.name)}" placeholder="เช่น แปลงหน้าบ้าน"></div>
+          <div class="field third"><label class="fl" for="pRai">ไร่</label><input class="inp" id="pRai" type="number" inputmode="decimal" value="${esc(p.rai)}"></div>
+          <div class="field third"><label class="fl" for="pNgan">งาน</label><input class="inp" id="pNgan" type="number" inputmode="decimal" value="${esc(p.ngan)}"></div>
+          <div class="field third"><label class="fl" for="pWa">ตร.วา</label><input class="inp" id="pWa" type="number" inputmode="decimal" value="${esc(p.wa)}"></div>
+          <div class="field half"><label class="fl" for="pTrees">จำนวนต้น</label><div class="inp-wrap"><input class="inp has-suf" id="pTrees" type="number" inputmode="numeric" value="${esc(p.trees)}"><span class="suf">ต้น</span></div></div>
+          <div class="field half"><label class="fl" for="pYear">ปีที่ปลูก (พ.ศ.)</label><input class="inp" id="pYear" type="number" inputmode="numeric" value="${esc(p.plantYear)}" placeholder="เช่น 2556"></div>
+          <div class="field"><label class="fl">สถานะ</label><div class="seg">${Object.entries(PLOT_STATUS).map(([k, l]) => `<label><input type="radio" name="pSt" value="${k}"${p.status === k ? ' checked' : ''}>${esc(l)}</label>`).join('')}</div></div>
+          <div class="field" id="pSysWrap"><label class="fl" for="pSys">ระบบกรีด</label><select class="inp" id="pSys">${TAP_SYSTEMS.map(t => `<option value="${esc(t)}"${p.tapSystem === t ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></div>
+          <div class="field"><label class="fl" for="pVar">พันธุ์ยาง</label><select class="inp" id="pVar"><option value="">- ไม่ระบุ -</option>${VARIETIES.map(v => `<option value="${esc(v)}"${p.variety === v ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></div>
+        </div><div class="pv"></div>`,
+        foot: `<button class="btn" data-a="no">ยกเลิก</button><button class="btn pri" data-a="ok">${ic('check')} บันทึก</button>`
+      });
+      const pv = $('.pv', ov);
+      const upd = () => {
+        const a = num($('#pRai', ov).value) + num($('#pNgan', ov).value) / 4 + num($('#pWa', ov).value) / 400;
+        const tr = num($('#pTrees', ov).value), yr = num($('#pYear', ov).value);
+        pv.innerHTML = (a || tr || yr) ? `<div class="preview"><dl class="kv"><dt>พื้นที่รวม</dt><dd>${fmt(a, 2)} ไร่</dd>${a && tr ? `<dt>ความหนาแน่น</dt><dd>${fmt(tr / a, 0)} ต้น/ไร่</dd>` : ''}${yr ? `<dt>อายุต้นยาง</dt><dd>${yearBE() - yr} ปี</dd>` : ''}</dl></div>` : '';
+        const young = $('input[name=pSt]:checked', ov).value === 'young';
+        $('#pSysWrap', ov).style.display = young ? 'none' : '';
+      };
+      $$('.inp,[name=pSt]', ov).forEach(el => { el.oninput = upd; el.onchange = upd; });
+      upd();
+      ov.querySelector('[data-a=no]').onclick = () => closeSheet(ov, true);
+      ov.querySelector('[data-a=ok]').onclick = () => {
+        const name = $('#pName', ov).value.trim();
+        if (!name) return toast('ใส่ชื่อแปลงก่อนครับ', 'warn');
+        const o = {
+          name, rai: num($('#pRai', ov).value), ngan: num($('#pNgan', ov).value), wa: num($('#pWa', ov).value),
+          trees: num($('#pTrees', ov).value), plantYear: num($('#pYear', ov).value),
+          status: $('input[name=pSt]:checked', ov).value, tapSystem: $('#pSys', ov).value, variety: $('#pVar', ov).value,
+        };
+        if (idx === undefined) st.plots.push(o); else st.plots[idx] = o;
+        save(); closeSheet(ov, true); draw();
+      };
+    };
+
+    /* แผ่นกรอกคนงาน */
+    const wkSheet = (idx) => {
+      const w = idx === undefined ? { name: '', payType: 'share', ownerPct: 55, dailyWage: num(S().dailyWage) || 350, phone: '', bank: '' } : { ...st.workers[idx] };
+      const ov = openSheet({
+        title: idx === undefined ? 'เพิ่มคนกรีด/คนงาน' : 'แก้ไข',
+        body: `<div class="fields">
+          <div class="field"><label class="fl" for="wName">ชื่อ *</label><input class="inp" id="wName" value="${esc(w.name)}"></div>
+          <div class="field"><label class="fl">รูปแบบการจ้าง</label><div class="seg">${Object.entries(PAY_TYPES).map(([k, l]) => `<label><input type="radio" name="wPt" value="${k}"${w.payType === k ? ' checked' : ''}>${esc(l)}</label>`).join('')}</div></div>
+          <div class="field half" id="wPctWrap"><label class="fl" for="wPct">สัดส่วนเจ้าของ</label><div class="inp-wrap"><input class="inp has-suf" id="wPct" type="number" inputmode="decimal" value="${esc(w.ownerPct)}"><span class="suf">%</span></div></div>
+          <div class="field half" id="wWageWrap"><label class="fl" for="wWage">ค่าแรงรายวัน</label><div class="inp-wrap"><input class="inp has-suf" id="wWage" type="number" inputmode="decimal" value="${esc(w.dailyWage)}"><span class="suf">บาท</span></div></div>
+          <div class="field half"><label class="fl" for="wPhone">เบอร์โทร</label><input class="inp" id="wPhone" type="tel" inputmode="tel" value="${esc(w.phone)}"></div>
+          <div class="field half"><label class="fl" for="wBank">พร้อมเพย์/บัญชี</label><input class="inp" id="wBank" value="${esc(w.bank)}" placeholder="08x-xxx-xxxx"></div>
+        </div><div class="pv"></div>`,
+        foot: `<button class="btn" data-a="no">ยกเลิก</button><button class="btn pri" data-a="ok">${ic('check')} บันทึก</button>`
+      });
+      const upd = () => {
+        const t = $('input[name=wPt]:checked', ov).value;
+        $('#wPctWrap', ov).style.display = t === 'share' ? '' : 'none';
+        $('#wWageWrap', ov).style.display = t === 'family' ? 'none' : '';
+        $('.pv', ov).innerHTML = t === 'share' ? `<div class="preview">แบ่งรายได้: เจ้าของ <b>${fmt(num($('#wPct', ov).value))}%</b> · คนกรีด <b>${fmt(100 - num($('#wPct', ov).value))}%</b></div>` : '';
+      };
+      $$('.inp,[name=wPt]', ov).forEach(el => { el.oninput = upd; el.onchange = upd; });
+      upd();
+      ov.querySelector('[data-a=no]').onclick = () => closeSheet(ov, true);
+      ov.querySelector('[data-a=ok]').onclick = () => {
+        const name = $('#wName', ov).value.trim();
+        if (!name) return toast('ใส่ชื่อก่อนครับ', 'warn');
+        const o = { name, payType: $('input[name=wPt]:checked', ov).value, ownerPct: num($('#wPct', ov).value), dailyWage: num($('#wWage', ov).value), phone: $('#wPhone', ov).value.trim(), bank: $('#wBank', ov).value.trim() };
+        if (idx === undefined) st.workers.push(o); else st.workers[idx] = o;
+        const firstShare = st.workers.find(x => x.payType === 'share');
+        if (firstShare) st.sale.ownerPct = num(firstShare.ownerPct);
+        save(); closeSheet(ov, true); draw();
+      };
+    };
+
+    /* สร้างข้อมูลจริง */
+    const finish = async () => {
+      const b = $('#wzNext', main); if (b) { b.disabled = true; b.textContent = 'กำลังสร้าง...'; }
+      try {
+        const farm = await saveRec('farms', { name: st.farm.name, district: st.farm.district, province: st.farm.province, owner: st.farm.owner, lat: st.farm.lat, lon: st.farm.lon });
+        const plotIds = [];
+        for (const p of st.plots) {
+          const r = await saveRec('plots', { farmId: farm.id, name: p.name, rai: p.rai, ngan: p.ngan, wa: p.wa, trees: p.trees, plantYear: p.plantYear, status: p.status, tapSystem: p.status === 'young' ? '' : p.tapSystem, variety: p.variety });
+          plotIds.push(r.id);
+        }
+        for (const w of st.workers) {
+          await saveRec('workers', { name: w.name, payType: w.payType, ownerPct: w.ownerPct, dailyWage: w.dailyWage, phone: w.phone, bank: w.bank, active: true, plotIds });
+        }
+        await setS({ ownerPct: num(st.sale.ownerPct) || S().ownerPct, place: st.farm.district || st.farm.province || S().place, lat: st.farm.lat || S().lat, lon: st.farm.lon || S().lon });
+        try {
+          localStorage.setItem('rf_last_sales', JSON.stringify({ product: st.sale.product, buyer: st.sale.buyer, priceBasis: st.sale.priceBasis, split: st.workers.some(w => w.payType === 'share') ? 'share' : 'owner', ownerPct: num(st.sale.ownerPct) }));
+          localStorage.setItem('rf_last_tapping', JSON.stringify({ product: st.sale.product === 'latex' ? 'latex' : 'cuplump' }));
+        } catch (e) { }
+        curFarm = farm.id; try { localStorage.setItem('rf_farm', curFarm); } catch (e) { }
+        wzClear();
+        META.weather = null;
+        toast('ตั้งค่าเรียบร้อย เริ่มใช้งานได้เลย', 'ok');
+        if (typeof celebrate === 'function') try { celebrate(); } catch (e) { }
+        go('home');
+        if (S().autoSync && S().scriptUrl) setTimeout(() => sync(false), 600);
+      } catch (e) {
+        toast('สร้างข้อมูลไม่สำเร็จ: ' + (e.message || e), 'err');
+        if (b) { b.disabled = false; b.textContent = 'ลองอีกครั้ง'; }
+      }
+    };
+
+    draw();
+  }
+};
+
+/* ---------------------------------------------------------
+   บันทึกเร็ว: กรีดวันนี้กดครั้งเดียว
+   --------------------------------------------------------- */
+let lastQuick = null;   // สำหรับปุ่มเลิกทำ
+async function quickTapToday() {
+  const t = today();
+  const done = new Set(list('tapping', r => r.date === t).map(r => r.plotId));
+  const plots = list('plots', p => inFarm(p) && p.status === 'tapping' && !done.has(p.id)).filter(p => tapDue(p, t).due);
+  if (!plots.length) return toast('วันนี้ไม่มีแปลงที่ถึงรอบกรีด', 'warn');
+  const remembered = lastUsed('tapping') || {};
+  const prevTap = list('tapping', inFarm).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+  const last = Object.assign({}, prevTap ? { workerIds: prevTap.workerIds, product: prevTap.product, startTime: prevTap.startTime } : {},
+    Object.fromEntries(Object.entries(remembered).filter(([, v]) => v !== undefined && v !== '')));
+  const ids = [];
+  for (const p of plots) {
+    const workers = (last.workerIds || []).filter(id => get('workers', id));
+    const r = await saveRec('tapping', {
+      date: t, plotId: p.id, workerIds: workers.length ? workers : activeWorkers().slice(0, 1).map(w => w.id),
+      product: last.product || 'cuplump', trees: num(p.trees) || '', rain: 'none', startTime: last.startTime || '',
+    });
+    ids.push(r.id);
+  }
+  lastQuick = { coll: 'tapping', ids };
+  undoToast(`บันทึกกรีด ${plots.length} แปลงแล้ว`, async () => {
+    for (const id of ids) await delRec('tapping', id);
+    toast('ยกเลิกแล้ว'); render();
+  });
+  render();
+}
+
+/** ข้อความแจ้งพร้อมปุ่มเลิกทำ */
+function undoToast(msg, onUndo, ms = 7000) {
+  let box = $('.toasts'); if (!box) { box = document.createElement('div'); box.className = 'toasts'; document.body.appendChild(box); }
+  const t = document.createElement('div');
+  t.className = 'toast ok undo';
+  t.innerHTML = `<span>${esc(msg)}</span><button type="button">เลิกทำ</button>`;
+  t.style.pointerEvents = 'auto';
+  box.appendChild(t);
+  const kill = () => { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 300); };
+  t.querySelector('button').onclick = async () => { kill(); await onUndo(); };
+  setTimeout(kill, ms);
+}
+
+/* ---------------------------------------------------------
+   บันทึกเร็ว: ขายยาง (น้ำหนัก + ราคา)
+   --------------------------------------------------------- */
+/** ค่าตั้งต้นของการขาย: ใช้ที่จำไว้ ถ้าไม่มีก็ดูจากการขายครั้งล่าสุดที่บันทึกไว้ */
+function lastSaleDefaults() {
+  const remembered = lastUsed('sales') || {};
+  const prev = list('sales', inFarm).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+  const base = {};
+  if (prev) ['product', 'buyer', 'plotId', 'farmId', 'split', 'ownerPct', 'priceBasis', 'shareMode', 'shares', 'workerIds'].forEach(k => { if (prev[k] !== undefined && prev[k] !== '') base[k] = prev[k]; });
+  return Object.assign(base, Object.fromEntries(Object.entries(remembered).filter(([, v]) => v !== undefined && v !== '')));
+}
+function quickSale() {
+  const last = lastSaleDefaults();
+  if (!list('plots').length) return openForm('sales');
+  const ws = activeWorkers();
+  const prod = last.product || 'cuplump';
+  const latest = list('prices', r => r.product === prod).sort(byDateDesc)[0];
+  const ov = openSheet({
+    title: 'ขายยางแบบเร็ว',
+    body: `<div class="qs-head"><b>${esc(PRODUCTS[prod] || '')}</b>${last.buyer ? ` · ${esc(last.buyer)}` : ''}${last.split === 'share' ? ` · แบ่ง ${fmt(last.ownerPct || S().ownerPct)}/${fmt(100 - num(last.ownerPct || S().ownerPct))}` : ''}</div>
+      <div class="fields">
+        <div class="field half"><label class="fl" for="qsW">น้ำหนัก *</label><div class="inp-wrap"><input class="inp has-suf" id="qsW" type="number" inputmode="decimal" autofocus><span class="suf">กก.</span></div></div>
+        <div class="field half"><label class="fl" for="qsP">ราคา *</label><div class="inp-wrap"><input class="inp has-suf" id="qsP" type="number" inputmode="decimal" value="${latest ? esc(latest.price) : ''}"><span class="suf">บ./กก.</span></div></div>
+      </div>
+      ${latest ? `<div class="hint">ราคาล่าสุดที่บันทึกไว้ ${fmt(latest.price, 2)} บ./กก. (${thDate(latest.date)}) — แก้ได้</div>` : ''}
+      <div class="pv"></div>`,
+    foot: `<button class="btn" data-a="full">กรอกแบบเต็ม</button><button class="btn pri" data-a="ok">${ic('check')} บันทึก</button>`
+  });
+  const draft = () => ({
+    date: today(), product: prod, buyer: last.buyer || '', plotId: last.plotId || '',
+    farmId: last.farmId || (curFarm !== 'all' ? curFarm : (list('farms')[0] || {}).id || ''),
+    priceBasis: last.priceBasis || 'wet', split: last.split || 'owner', ownerPct: last.ownerPct ?? S().ownerPct,
+    workerIds: (last.workerIds || []).filter(id => get('workers', id)),
+    shareMode: last.shareMode || '', shares: last.shares || {},
+    weight: num($('#qsW', ov).value), price: num($('#qsP', ov).value), received: true,
+  });
+  const upd = () => {
+    const d = draft();
+    if (!d.weight || !d.price) return $('.pv', ov).innerHTML = '';
+    const c = saleCalc(d);
+    $('.pv', ov).innerHTML = `<div class="preview"><dl class="kv"><dt>ยอดขาย</dt><dd>${baht(c.gross)}</dd>${c.tapperTotal ? `<dt>คนกรีดได้</dt><dd>${baht(c.tapperTotal)}</dd>` : ''}<dt><b>เจ้าของได้รับ</b></dt><dd><b class="pos">${baht(c.ownerNet)}</b></dd></dl></div>`;
+  };
+  $$('.inp', ov).forEach(el => el.oninput = upd);
+  ov.querySelector('[data-a=full]').onclick = () => { const d = draft(); closeSheet(ov, true); openForm('sales', null, d.weight || d.price ? d : {}); };
+  ov.querySelector('[data-a=ok]').onclick = async () => {
+    const d = draft();
+    if (!d.weight) return toast('ใส่น้ำหนักก่อนครับ', 'warn');
+    if (!d.price) return toast('ใส่ราคาก่อนครับ', 'warn');
+    if (d.split === 'share' && !d.workerIds.length && ws.length) d.workerIds = [ws[0].id];
+    closeSheet(ov, true);
+    const r = await saveRec('sales', d);
+    const c = saleCalc(r);
+    undoToast(`บันทึกขาย ${fmt(d.weight, 1)} กก. · เจ้าของได้ ${baht(c.ownerNet)}`, async () => { await delRec('sales', r.id); toast('ยกเลิกแล้ว'); render(); });
+    if (typeof celebrate === 'function') try { celebrate(); } catch (e) { }
+    render();
+  };
+  setTimeout(() => { const w = $('#qsW', ov); if (w) try { w.focus({ preventScroll: true }); } catch (e) { } }, 120);
+}
+
+/* ---------------------------------------------------------
+   ทำซ้ำรายการเดิม
+   --------------------------------------------------------- */
+const REPEATABLE = ['sales', 'tapping', 'expenses', 'worklogs', 'payments', 'incomes', 'activities', 'prices'];
+function repeatRec(coll, id) {
+  const r = DB[coll]?.get(id); if (!r) return;
+  const d = { ...r };
+  delete d.id; delete d.createdAt; delete d.updatedAt; delete d.createdBy; delete d.updatedBy; delete d.deleted;
+  delete d.photos; delete d.lotNo;
+  d.date = today();
+  openForm(coll, null, d);
+}
+/* เพิ่มปุ่ม "ทำซ้ำ" ในฟอร์มแก้ไขของรายการที่ทำซ้ำได้ */
+(function hookRepeat() {
+  const raw = openForm;
+  openForm = function (coll, rec, preset) {
+    const ov = raw.apply(this, arguments);
+    try {
+      if (rec && rec.id && REPEATABLE.includes(coll) && canEdit()) {
+        const foot = $('.sheet-f', ov);
+        if (foot && !$('[data-a=rep]', foot)) {
+          const b = document.createElement('button');
+          b.className = 'btn'; b.dataset.a = 'rep'; b.innerHTML = `${ic('repeat')} ทำซ้ำ`;
+          b.onclick = () => { closeSheet(ov, true); repeatRec(coll, rec.id); };
+          foot.insertBefore(b, foot.querySelector('[data-a=cancel]') || foot.firstChild);
+        }
+      }
+    } catch (e) { }
+    return ov;
+  };
+})();
+
+/* ---------------------------------------------------------
+   หน้าหลัก: ปุ่มลัดบันทึกเร็ว + พาไปตัวช่วยตั้งค่าเมื่อยังไม่มีสวน
+   --------------------------------------------------------- */
+(function homeQuick() {
+  const raw = ROUTES.home.render;
+  ROUTES.home.render = function (main) {
+    raw.call(this, main);
+    if (route.name !== 'home') return;
+    // ยังไม่มีสวน → เสนอตัวช่วยตั้งค่าเป็นอันดับแรก
+    if (!list('farms').length) {
+      const onb = $$('#main .card').find(c => /เริ่มต้นใช้งาน/.test(c.querySelector('h3')?.textContent || ''));
+      const st = wzState();
+      const box = document.createElement('div');
+      box.className = 'card wz-cta';
+      box.innerHTML = `<h3>${ic('wand')} ตั้งค่าสวนให้เสร็จใน 5 นาที</h3>
+        <p class="small">ตอบไม่กี่ข้อ — ชื่อสวน แปลง คนกรีด แล้วแอพพร้อมใช้ทันที${st && !st.done ? ' <b>(ทำค้างไว้อยู่)</b>' : ''}</p>
+        <button class="btn pri block" data-go="start">${ic('wand')} ${st && !st.done ? 'ทำต่อจากที่ค้างไว้' : 'เริ่มตั้งค่า'}</button>`;
+      if (onb) onb.replaceWith(box); else main.insertBefore(box, main.firstChild);
+      return;
+    }
+    // ปุ่มในการ์ด "รอบกรีดวันนี้" → บันทึกทันทีแบบกดครั้งเดียว
+    const t = today();
+    const done = new Set(list('tapping', r => r.date === t).map(r => r.plotId));
+    const due = list('plots', p => inFarm(p) && p.status === 'tapping' && !done.has(p.id)).filter(p => tapDue(p, t).due);
+    const dueBtn = $$('#main .card .btn.pri.block').find(b => b.dataset.go === 'tapday');
+    if (dueBtn && due.length) {
+      const wrap = document.createElement('div');
+      wrap.className = 'row wrap duebtns';
+      wrap.innerHTML = `<button class="btn pri" id="qkTap">${ic('bolt')} กรีดแล้ว บันทึกเลย (${due.length} แปลง)</button>
+        <button class="btn" data-go="tapday">${ic('edit')} กรอกรายละเอียด</button>`;
+      dueBtn.replaceWith(wrap);
+      $('#qkTap', main).onclick = () => quickTapToday();
+    }
+    // ปุ่มขายเร็ว
+    const quick = $('#main .quick', main);
+    if (quick && !$('#qkBar', main)) {
+      const bar = document.createElement('div');
+      bar.id = 'qkBar'; bar.className = 'qkbar';
+      bar.innerHTML = `<button class="qk" id="qkSale">${ic('bolt')}<span>ขายยางแบบเร็ว<b>ใส่แค่น้ำหนักกับราคา</b></span></button>`;
+      quick.before(bar);
+      $('#qkSale', main).onclick = () => quickSale();
+    }
+  };
+})();
+
+/* เมนู: เพิ่มทางเข้าตัวช่วยตั้งค่า */
+(function menuStart() {
+  const raw = ROUTES.menu.render;
+  ROUTES.menu.render = function (main) {
+    raw.call(this, main);
+    addMenuItems({ 'เครื่องมือ': [['start', 'wand', 'ตัวช่วยตั้งค่าสวน']] });
+  };
+})();
+
+/* ปุ่มลัดในแผ่น "บันทึกรายการใหม่" */
+(function quickAddFast() {
+  const raw = quickAdd;
+  quickAdd = function () {
+    raw.apply(this, arguments);
+    const ov = $('.overlay'); if (!ov) return;
+    const grid = $('.menu-grid', ov); if (!grid) return;
+    const mk = (id, icon, label) => { const b = document.createElement('button'); b.id = id; b.innerHTML = `<span class="q">${ic(icon)}</span>${label}`; return b; };
+    const a = mk('qaSale', 'bolt', 'ขายเร็ว (น้ำหนัก+ราคา)');
+    a.onclick = () => { closeSheet(ov, true); quickSale(); };
+    grid.insertBefore(a, grid.firstChild);
+    const t = today();
+    const done = new Set(list('tapping', r => r.date === t).map(r => r.plotId));
+    const due = list('plots', p => inFarm(p) && p.status === 'tapping' && !done.has(p.id)).filter(p => tapDue(p, t).due);
+    if (due.length) {
+      const b = mk('qaTap', 'bolt', `กรีดวันนี้ ${due.length} แปลง (กดครั้งเดียว)`);
+      b.onclick = () => { closeSheet(ov, true); quickTapToday(); };
+      grid.insertBefore(b, grid.firstChild);
+    }
+  };
+})();
 </script>
+<script src="improvements.js"></script>
+<script src="owner-domain.js"></script>
+<script src="owner-data.js"></script>
+<script src="owner-ui.js"></script>
 </body>
 </html>
