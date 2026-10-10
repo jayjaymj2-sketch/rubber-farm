@@ -220,7 +220,8 @@ async function applySync35(data, sent) {
     await commit35(updates, meta); return updates;
   });
 }
-sync = async function (manual) {
+let syncJob35 = null;
+async function syncRun35(manual) {
   const s = S(); if (!s.scriptUrl || !s.apiKey) { if (manual) { toast('กรุณาเชื่อม Google Sheets ก่อน', 'warn'); go('settings'); } return; }
   if (syncing) return;
   if (!navigator.onLine) { if (manual) toast('เก็บข้อมูลในเครื่องแล้ว จะส่งเมื่อออนไลน์', 'warn'); updateSyncBtn(); return; }
@@ -249,6 +250,11 @@ sync = async function (manual) {
     if (!$('.overlay')) render();
   } catch (e) { syncErr = e.message; if (manual) toast('ซิงค์ไม่สำเร็จ: ' + e.message, 'err'); }
   finally { syncing = false; updateSyncBtn(); if (route.name === 'home' && !list('farms').length) render(); if (dirtyCount() && !syncErr && !Object.keys(META.conflicts || {}).length && S().autoSync) scheduleSync(); }
+}
+sync = function(manual) {
+  if (syncJob35) return syncJob35;
+  syncJob35 = syncRun35(manual).finally(() => { syncJob35 = null; });
+  return syncJob35;
 };
 const syncBtnRaw35 = updateSyncBtn;
 updateSyncBtn = function () {

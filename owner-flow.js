@@ -167,6 +167,7 @@ ROUTES.connection37 = { title: 'เชื่อมข้อมูลและต
   const receive = async (button, link) => {
     button.disabled = true; $('#setupStatus37', main).textContent = 'กำลังเชื่อมและรับยอดเงิน...';
     try {
+      if (syncing) await sync(false);
       if (link) await connectFromLink37(link);
       else { await dataLock35(async () => { const meta = clone35(META); meta.lastPull = 0; await commit35({}, meta); }); }
       $('#setupLink37', main).value = '';

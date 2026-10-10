@@ -2669,6 +2669,7 @@ async function loadDemo() {
 
 /* ---------------- init ---------------- */
 async function connectFromLink37(value) {
+  if (syncing) await sync(false);
   let hash;
   try { hash = new URL(String(value).trim(), location.origin + location.pathname).hash; }
   catch (e) { throw new Error('วางลิงก์เชื่อมสวนที่ได้รับให้ครบ'); }
