@@ -112,7 +112,10 @@ var Farm36 = (() => {
   function workerAllocation(s, cutoff = '9999-12-31', farmId = 'all') {
     const groups = {}, bySale = {};
     const belongs = r => r.date <= cutoff && (farmId === 'all' || farm(s, r) === farmId);
-    const group = (workerId, r) => groups[JSON.stringify([workerId, farm(s, r)])] ||= { workerId, farmId: farm(s, r), claims: [], credits: 0 };
+    const group = (workerId, r) => {
+      const key = JSON.stringify([workerId, farm(s, r)]);
+      return groups[key] || (groups[key] = { workerId, farmId: farm(s, r), claims: [], credits: 0 });
+    };
     rows(s, 'sales').filter(belongs).forEach(r => {
       const c = sale(r); bySale[r.id] = { earned: c.tapperTotal, settled: 0, remaining: 0, workers: {} };
       c.ids.forEach(id => group(id, r).claims.push({ saleId: r.id, id: r.id, date: r.date, at: n(r.createdAt), amount: c.per[id] }));
@@ -141,7 +144,7 @@ var Farm36 = (() => {
     rows(s, 'sales').filter(r => r.date <= cutoff && (farmId === 'all' || farm(s, r) === farmId)).forEach(r => {
       const c = sale(r), received = Math.min(c.net, totalSettled(s, 'receive', r, cutoff));
       c.ids.forEach(id => {
-        const key = JSON.stringify([id, farm(s, r)]), g = groups[key] ||= { received: 0, settled: 0, remaining: 0 };
+        const key = JSON.stringify([id, farm(s, r)]), g = groups[key] || (groups[key] = { received: 0, settled: 0, remaining: 0 });
         g.received += c.net > 0 ? c.per[id] * received / c.net : 0;
         g.settled += allocation[r.id]?.workers[id]?.settled || 0; g.remaining += allocation[r.id]?.workers[id]?.remaining || 0;
       });
@@ -164,7 +167,7 @@ var Farm36 = (() => {
     const groups = {};
     rows(s, 'sales').filter(r => r.date >= from && r.date <= to && (farmId === 'all' || farm(s, r) === farmId)).forEach(r => {
       const c = sale(r), key = (r.buyer || 'ไม่ระบุร้าน') + '|' + r.product;
-      const g = groups[key] ||= { buyer: r.buyer || 'ไม่ระบุร้าน', product: r.product, count: 0, kg: 0, dryKg: 0, net: 0, owner: 0, unknownDRC: 0, debt: 0 };
+      const g = groups[key] || (groups[key] = { buyer: r.buyer || 'ไม่ระบุร้าน', product: r.product, count: 0, kg: 0, dryKg: 0, net: 0, owner: 0, unknownDRC: 0, debt: 0 });
       g.count++; g.kg += n(r.weight); g.owner += c.ownerAfterTransport; g.debt += outstanding(s, 'receive', r);
       if (c.dryKg > 0) { g.dryKg += c.dryKg; g.net += c.gross - n(r.deduct) - n(r.transportCost); } else g.unknownDRC++;
     });
