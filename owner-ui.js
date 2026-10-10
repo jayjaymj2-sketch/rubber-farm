@@ -30,13 +30,13 @@ quickSale = function () {
   const last = lastSaleDefaults(), farm = defFarm(), workers = activeWorkers().filter(w => w.payType === 'share');
   const ids = (last.workerIds || []).filter(id => workers.some(w => w.id === id)); if (!ids.length && workers.length === 1) ids.push(workers[0].id);
   const product = last.product || 'cuplump';
-  const ov = openSheet({ title: 'ขายยาง · พ่อ 55% · คนกรีด 45%', body: `<div class="hint">หักค่ารถก่อนแบ่ง · พ่อ 55% · คนกรีดรวม 45%</div><div class="fields">
+  const ov = openSheet({ title: 'ขายยาง · พ่อ 55% · คนกรีด 45%', body: `<div class="hint" id="saleAgreement36">${S().transportPayer === 'owner' ? 'แบ่งพ่อ 55% / คนกรีด 45% ก่อน แล้วหักค่ารถจากส่วนพ่อคนเดียว' : 'หักค่ารถก่อนแบ่ง · พ่อ 55% · คนกรีดรวม 45%'}</div><div class="fields">
     <div class="field half"><label class="fl">วันที่ขาย</label><input class="inp" type="date" id="saleDate36" value="${today()}"></div>
     <div class="field half"><label class="fl">สวน</label><select class="inp" id="saleFarm36">${list('farms').map(f => option36(f.id, f.name, farm)).join('')}</select></div>
     <div class="field"><label class="fl">แปลง</label><select class="inp" id="salePlot36"></select></div>
     <div class="field"><label class="fl">ผู้รับซื้อ</label><input class="inp" id="saleBuyer36" value="${esc(last.buyer || '')}" list="buyers36"><datalist id="buyers36">${[...new Set(list('sales').map(s => s.buyer).filter(Boolean))].map(x => option36(x, x)).join('')}</datalist></div>
     <div class="field"><label class="fl">คนกรีดที่ได้ส่วนแบ่ง</label><div class="row wrap">${workers.map(w => `<label class="worker35"><input type="checkbox" name="saleWorker36" value="${esc(w.id)}"${ids.includes(w.id) ? ' checked' : ''}>${esc(w.name)}</label>`).join('') || '<button class="btn" data-new="workers">เพิ่มชื่อคนกรีด</button>'}</div></div>
-    ${input36('saleWeight36', 'น้ำหนักตามใบชั่ง (กก.)')}${input36('salePrice36', 'ราคาต่อกิโลกรัม (บาท)')}${input36('saleTransport36', 'ค่ารถขนยาง (บาท)', 0)}
+    ${input36('saleWeight36', 'น้ำหนักตามใบชั่ง (กก.)')}${input36('salePrice36', 'ราคาต่อกิโลกรัม (บาท)')}${input36('saleTransport36', 'ค่ารถขนยาง (บาท)', S().transportCostDefault)}
     <div class="field"><label class="fl">จ่ายค่ารถอย่างไร</label><select class="inp" id="saleTransportMethod36"><option value="separate">พ่อจ่ายค่ารถต่างหาก</option><option value="withheld">ผู้ซื้อหักจากเงินค่ายางแล้ว</option></select></div>
     <div class="field" id="transportPaidWrap36"><label class="fl">ค่ารถที่พ่อจ่ายต่างหาก</label><select class="inp" id="saleTransportPaid36"><option value="yes">จ่ายแล้วในวันที่ขาย</option><option value="no">ยังไม่ได้จ่าย</option></select></div>
     <div class="field"><label class="fl">รับเงินค่ายาง</label><select class="inp" id="saleReceived36"><option value="">เลือกสถานะรับเงิน</option><option value="full">รับครบแล้ว</option><option value="partial">รับบางส่วน</option><option value="none">ยังไม่ได้รับ</option></select></div>
@@ -46,7 +46,7 @@ quickSale = function () {
     <div class="field"><label class="fl">ชนิดยาง</label><select class="inp" id="saleProduct36">${Object.entries(PRODUCTS).map(([k, l]) => option36(k, l, product)).join('')}</select></div>
     <div class="field"><label class="fl">วิธีคิดราคา</label><select class="inp" id="saleBasis36">${option36('wet', 'ตามน้ำหนักชั่ง', last.priceBasis || 'wet')}${option36('dry', 'ตามเนื้อยางแห้ง', last.priceBasis || 'wet')}</select></div>
     ${input36('saleDrc36', '%DRC (ตามใบชั่ง หากมี)')}${input36('saleDeduct36', 'ค่าหักอื่น (ไม่รวมค่ารถ)', 0)}
-    <div class="field"><label class="fl">ข้อตกลงค่ารถครั้งนี้</label><select class="inp" id="salePayer36">${option36('shared', 'หักค่ารถก่อนแบ่ง 55/45', S().transportPayer || 'shared')}${option36('owner', 'พ่อออกค่ารถจากส่วนของพ่อ', S().transportPayer || 'shared')}</select></div>
+    <div class="field"><label class="fl">ข้อตกลงค่ารถครั้งนี้</label><select class="inp" id="salePayer36">${option36('owner', 'พ่อออกค่ารถคนเดียวจากส่วน 55%', S().transportPayer || 'owner')}${option36('shared', 'หักค่ารถก่อนแบ่ง 55/45', S().transportPayer || 'owner')}</select></div>
     <div class="field"><label class="fl">ตัดยางออกจากล็อตที่เลือก (ถ้ามี)</label><div id="saleLots36"></div><p class="hint">ถ้าไม่เลือกลอต จะบันทึกขายได้ แต่ยังไม่ตัดจากสต็อกล็อต</p></div>
     </div></details><div id="salePreview36" aria-live="polite"></div>`, foot: '<button class="btn" data-cancel>ยกเลิก</button><button class="btn pri" data-save>ตรวจแล้ว · บันทึกขาย</button>' });
   const plotOptions = () => { const f = $('#saleFarm36', ov).value; $('#salePlot36', ov).innerHTML = option36('', 'รวมสวน / ไม่แยกแปลง', '') + list('plots', p => p.farmId === f).map(p => option36(p.id, p.name, last.plotId)).join(''); };
@@ -63,6 +63,7 @@ quickSale = function () {
     lotAllocations: $$('[data-lot36]:checked', ov).map(x => ({ lotId: x.dataset.lot36, kg: num($(`[data-lotkg36="${x.dataset.lot36}"]`, ov).value) })) });
   const update = () => { const d = draft(), c = saleCalc(d), status = $('#saleReceived36', ov).value;
     $('#transportPaidWrap36', ov).hidden = d.transportMethod === 'withheld' || !d.transportCost;
+    $('#saleAgreement36', ov).textContent = d.transportPayer === 'owner' ? 'แบ่งพ่อ 55% / คนกรีด 45% ก่อน แล้วหักค่ารถจากส่วนพ่อคนเดียว' : 'หักค่ารถก่อนแบ่ง · พ่อ 55% · คนกรีดรวม 45%';
     $('#receiptFields36', ov).hidden = !status || status === 'none'; $('#saleReceipt36', ov).disabled = status === 'full'; if (status === 'full') $('#saleReceipt36', ov).value = c.net;
     const error = saleError35(d); $('#salePreview36', ov).innerHTML = error ? `<p class="hint">${esc(error)}</p>` : SCHEMA.sales.preview(d);
   };
@@ -155,12 +156,12 @@ ROUTES.healthFollow = { title: 'ติดตามต้นยาง', render(ma
   }).join(''); $$('[data-follow36]', main).forEach(b => b.onclick = () => { const h = get('health', b.dataset.follow36); openForm('healthchecks', null, { healthId: h.id, farmId: farmOf(h), plotId: h.plotId }); });
 } };
 function configureOwner36() {
-  const ov = openSheet({ title: 'ตั้งค่าการใช้งานของพ่อ', body: `<p>พ่อเป็นเจ้าของสวน จ้างคนกรีด โดยพ่อ 55% · คนกรีด 45%</p><div class="field"><label class="fl">ข้อตกลงค่ารถเริ่มต้น</label><select class="inp" id="ownerPayer36">${option36('shared', 'หักค่ารถก่อน แล้วแบ่ง 55/45', S().transportPayer || 'shared')}${option36('owner', 'แบ่ง 55/45 แล้วพ่อออกค่ารถเอง', S().transportPayer || 'shared')}</select></div><label class="switch"><input type="checkbox" id="ownerView36"${S().ownerView !== false ? ' checked' : ''}>ใช้หน้าหลักแบบง่ายสำหรับเจ้าของสวน</label>`, foot: '<button class="btn pri" data-save>บันทึก</button>' });
-  bindSave36(ov, async () => { await setS({ ownerView: $('#ownerView36', ov).checked, ownerPct: 55, transportPayer: $('#ownerPayer36', ov).value }); closeSheet(ov, true); render(); });
+  const ov = openSheet({ title: 'ตั้งค่าการใช้งานของพ่อ', body: `<p>พ่อเป็นเจ้าของสวน จ้างคนกรีด โดยพ่อ 55% · คนกรีด 45%</p><div class="field"><label class="fl">ข้อตกลงค่ารถเริ่มต้น</label><select class="inp" id="ownerPayer36">${option36('owner', 'แบ่ง 55/45 แล้วพ่อออกค่ารถคนเดียว', S().transportPayer || 'owner')}${option36('shared', 'หักค่ารถก่อน แล้วแบ่ง 55/45', S().transportPayer || 'owner')}</select></div>${input36('ownerTransportDefault36', 'ค่ารถเริ่มต้นต่อครั้ง (แก้ตอนขายได้)', S().transportCostDefault)}<label class="switch"><input type="checkbox" id="ownerView36"${S().ownerView !== false ? ' checked' : ''}>ใช้หน้าหลักแบบง่ายสำหรับเจ้าของสวน</label>`, foot: '<button class="btn pri" data-save>บันทึก</button>' });
+  bindSave36(ov, async () => { const cost = Number($('#ownerTransportDefault36', ov).value); if (!Number.isFinite(cost) || cost < 0) throw new Error('ค่ารถต้องไม่ติดลบ'); await setS({ ownerView: $('#ownerView36', ov).checked, ownerPct: 55, transportPayer: $('#ownerPayer36', ov).value, transportCostDefault: cost }); closeSheet(ov, true); render(); });
 }
 const advancedHome36 = ROUTES.home.render;
 function ownerStart36(main) {
-  main.innerHTML = `<section class="card owner36"><h2>เริ่มใช้งานสวนของพ่อ</h2><p>พ่อเป็นเจ้าของสวน จ้างคนกรีด แบ่งพ่อ 55% คนกรีด 45% โดยหักค่ารถก่อนแบ่ง</p><div class="fields">${input36('startFarm36', 'ชื่อสวน', '', 'text')}${input36('startPlot36', 'ชื่อแปลง (ถ้ามี)', '', 'text')}${input36('startWorker36', 'ชื่อคนกรีด', '', 'text')}</div><button class="btn pri block" id="startSave36">เริ่มใช้งาน</button><p class="hint">เพิ่มคนกรีดและแปลงอื่นภายหลังได้ ข้อมูลเก็บในเครื่องนี้จนกว่าจะเชื่อมระบบกลาง</p><button class="btn" data-go="settings">เชื่อมข้อมูลเดิม / กู้ไฟล์สำรอง</button></section>`;
+  main.innerHTML = `<section class="card owner36"><h2>เริ่มใช้งานสวนของพ่อ</h2><p>พ่อเป็นเจ้าของสวน จ้างคนกรีด แบ่งพ่อ 55% คนกรีด 45% ก่อน แล้วพ่อจ่ายค่ารถจากส่วนของพ่อคนเดียว</p><div class="fields">${input36('startFarm36', 'ชื่อสวน', '', 'text')}${input36('startPlot36', 'ชื่อแปลง (ถ้ามี)', '', 'text')}${input36('startWorker36', 'ชื่อคนกรีด', '', 'text')}</div><button class="btn pri block" id="startSave36">เริ่มใช้งาน</button><p class="hint">เพิ่มคนกรีดและแปลงอื่นภายหลังได้ ข้อมูลเก็บในเครื่องนี้จนกว่าจะเชื่อมระบบกลาง</p><button class="btn" data-go="settings">เชื่อมข้อมูลเดิม / กู้ไฟล์สำรอง</button></section>`;
   $('#startSave36', main).onclick = async e => {
     const farmName = $('#startFarm36', main).value.trim(), workerName = $('#startWorker36', main).value.trim(), plotName = $('#startPlot36', main).value.trim();
     if (!farmName || !workerName) return toast('กรอกชื่อสวนและคนกรีด', 'warn'); const button = e.currentTarget; button.disabled = true;

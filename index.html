@@ -514,7 +514,7 @@ body:has(.overlay) .toasts{bottom:auto;top:calc(env(safe-area-inset-top) + 64px)
 /* =========================================================
    สวนยางพารา — แอพบริหารจัดการสวนยาง (Offline-first PWA)
    ========================================================= */
-const APP_VERSION = '3.7.0';
+const APP_VERSION = '3.7.1';
 // ▼ ใส่ URL ของ Apps Script และรหัส API ตรงนี้ เพื่อให้ทุกเครื่องตั้งค่าอัตโนมัติ (ไม่บังคับ)
 const EMBED = { scriptUrl: '', apiKey: '' };
 
@@ -526,7 +526,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const num = v => { if (typeof v === 'number') return isFinite(v) ? v : 0; const n = parseFloat(String(v ?? '').replace(/,/g, '')); return isFinite(n) ? n : 0; };
 const r2 = n => Math.round((num(n) + Number.EPSILON) * 100) / 100;
 const fmt = (n, d = 2) => { const v = num(n); return (v === 0 ? 0 : v).toLocaleString('th-TH', { maximumFractionDigits: d }); };
-const baht = (n, d = 0) => (num(n) < 0 ? '-' : '') + '฿' + Math.abs(num(n)).toLocaleString('th-TH', { maximumFractionDigits: Math.abs(num(n)) < 1000 ? 2 : d });
+const baht = (n, d = 2) => (num(n) < 0 ? '-' : '') + '฿' + Math.abs(num(n)).toLocaleString('th-TH', { minimumFractionDigits: d > 0 && Math.abs(num(n)) % 1 ? Math.min(2, d) : 0, maximumFractionDigits: Math.max(d, 0) });
 const bahtS = n => { const a = Math.abs(num(n)); const s = num(n) < 0 ? '-' : ''; if (a >= 1e6) return s + '฿' + fmt(a / 1e6, 2) + 'ล.'; if (a >= 1e5) return s + '฿' + fmt(a / 1e3, 1) + 'k'; return s + '฿' + fmt(a, 0); };
 const sum = (arr, f) => arr.reduce((s, x) => s + num(typeof f === 'function' ? f(x) : x[f]), 0);
 const groupBy = (arr, f) => arr.reduce((m, x) => { const k = f(x); (m[k] = m[k] || []).push(x); return m; }, {});
@@ -674,9 +674,12 @@ const store = {
 
 const S = () => {
   const s = META.settings || (META.settings = {});
-  return Object.assign({ ownerPct: 55, ownerView: true, transportPayer: 'shared', dailyWage: 350, lat: 18.3609, lon: 103.6464, place: 'บึงกาฬ', theme: 'auto', autoSync: true, expCats: DEFAULT_EXP_CATS.join('\n'), scriptUrl: EMBED.scriptUrl, apiKey: EMBED.apiKey, bagKg: 50, simple: false, refYield: 250, cupDrc: 50, autoPrice: true }, s);
+  const current = Object.assign({ ownerPct: 55, ownerView: true, transportPayer: 'owner', transportCostDefault: 200, dailyWage: 350, lat: 18.3609, lon: 103.6464, place: 'บึงกาฬ', theme: 'auto', autoSync: true, expCats: DEFAULT_EXP_CATS.join('\n'), scriptUrl: EMBED.scriptUrl, apiKey: EMBED.apiKey, bagKg: 50, simple: false, refYield: 250, cupDrc: 50, autoPrice: true }, s);
+  // Apply the father's corrected agreement to new-sale defaults, never historical records.
+  if (s.transportAgreementRevision !== 1) { current.transportPayer = 'owner'; current.transportCostDefault = 200; }
+  return current;
 };
-const setS = async patch => dataLock35(async () => { const meta = clone35(META); meta.settings = Object.assign(meta.settings || {}, patch); await commit35({}, meta); });
+const setS = async patch => dataLock35(async () => { const meta = clone35(META); meta.settings = Object.assign(meta.settings || {}, patch); if ('transportPayer' in patch || 'transportCostDefault' in patch) meta.settings.transportAgreementRevision = 1; await commit35({}, meta); });
 const expCats = () => String(S().expCats || '').split('\n').map(x => x.trim()).filter(Boolean);
 const role = () => (S().scriptUrl && META.auth && META.auth.role) || 'owner';
 const canEdit = () => role() !== 'viewer';

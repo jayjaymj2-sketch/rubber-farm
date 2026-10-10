@@ -9,7 +9,7 @@ const lastUsedBefore36 = lastUsed;
 lastUsed = function(coll) {
   const last = lastUsedBefore36(coll);
   // New owner sales use the current agreement; historical records keep their own shares.
-  return ownerMode36() && coll === 'sales' ? { ...last, ownerPct: 55 } : last;
+  return ownerMode36() && coll === 'sales' ? { ...last, ownerPct: 55, transportPayer: S().transportPayer, transportCost: S().transportCostDefault, transportMethod: 'separate' } : last;
 };
 saleCalc = Farm36.sale;
 saleError35 = d => Farm36.error(state36(), 'sales', d);
@@ -62,7 +62,7 @@ SCHEMA.workers.fields.find(f => f.k === 'ownerPct').def = 55;
 salesFields36.find(x => x.k === 'deduct').l = 'รายการหักอื่นบนใบชั่ง (ไม่รวมค่ารถ)';
 salesFields36.find(x => x.k === 'ownerPct').def = 55;
 salesFields36.splice(salesFields36.findIndex(x => x.k === 'deduct') + 1, 0,
-  field36('transportCost', 'ค่ารถขนยาง (บาท)', 'num', { def: 0 }),
+  field36('transportCost', 'ค่ารถขนยาง (บาท)', 'num', { def: () => S().transportCostDefault }),
   field36('transportPayer', 'ใครรับผิดชอบค่ารถ', 'seg', { opt: { owner: 'พ่อจ่ายจากส่วนของพ่อ', shared: 'หักค่ารถก่อนแบ่งตามสัดส่วน' }, def: () => S().transportPayer || '', re: 1 }),
   field36('transportMethod', 'วิธีจ่ายค่ารถ', 'seg', { opt: { separate: 'พ่อจ่ายค่ารถต่างหาก', withheld: 'ผู้ซื้อหักจากเงินค่ายาง' }, def: 'separate' }));
 salesFields36.push(field36('dueDate', 'วันครบกำหนดรับเงิน', 'date'));
