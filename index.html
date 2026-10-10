@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>สวนยางพารา</title>
+<title>สวนยางหนองหิ้ง บึงกาฬ</title>
 <meta name="description" content="แอพบริหารจัดการสวนยางพารา บันทึกการกรีด ขายยาง แบ่งรายได้ ค่าแรง รายจ่าย และรายงานกำไรขาดทุน">
 <meta name="theme-color" content="#047857">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -514,7 +514,8 @@ body:has(.overlay) .toasts{bottom:auto;top:calc(env(safe-area-inset-top) + 64px)
 /* =========================================================
    สวนยางพารา — แอพบริหารจัดการสวนยาง (Offline-first PWA)
    ========================================================= */
-const APP_VERSION = '3.7.1';
+const APP_VERSION = '3.7.2';
+const APP_NAME = 'สวนยางหนองหิ้ง บึงกาฬ';
 // ▼ ใส่ URL ของ Apps Script และรหัส API ตรงนี้ เพื่อให้ทุกเครื่องตั้งค่าอัตโนมัติ (ไม่บังคับ)
 const EMBED = { scriptUrl: '', apiKey: '' };
 
@@ -1682,8 +1683,8 @@ function render() {
   const main = $('#main');
   renderFarmSel();
   const title = typeof R.title === 'function' ? R.title(...route.params) : R.title;
-  $('#title').innerHTML = route.name === 'home' ? `${LOGO}<span>สวนยางพารา</span>` : esc(title);
-  document.title = (route.name === 'home' ? '' : title + ' · ') + 'สวนยางพารา';
+  $('#title').innerHTML = route.name === 'home' ? `${LOGO}<span>${esc(APP_NAME)}</span>` : esc(title);
+  document.title = (route.name === 'home' ? '' : title + ' · ') + APP_NAME;
   $('#top').classList.toggle('has-back', !['home', 'menu', 'tapping', 'sales'].includes(route.name));
   const navKey = ['home', 'tapping', 'sales'].includes(route.name) ? route.name : 'menu';
   $$('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === navKey));
@@ -1983,7 +1984,7 @@ ROUTES.menu = {
       ['เครื่องมือ', [['ai', 'bot', 'ผู้ช่วย AI ประจำสวน'], ['calc', 'calc', 'เครื่องคิดเลข'], ['guide', 'book', 'คู่มือสวนยาง'], ['settings', 'gear', 'ตั้งค่า/ซิงค์'], ['diag', 'info', 'ตรวจสอบระบบ']]],
     ];
     main.innerHTML = groups.map(([g, items]) => `<div class="sec-title">${g}</div><div class="menu-grid">${items.map(([r, i, l]) => `<button data-go="${r}"><span class="q">${ic(i)}</span>${l}</button>`).join('')}</div>`).join('') +
-      `<div class="faint xs" style="text-align:center;margin-top:24px">สวนยางพารา v${APP_VERSION} · ${store.mode === 'idb' ? 'IndexedDB' : 'localStorage'}</div>`;
+      `<div class="faint xs" style="text-align:center;margin-top:24px">${esc(APP_NAME)} v${APP_VERSION} · ${store.mode === 'idb' ? 'IndexedDB' : 'localStorage'}</div>`;
   }
 };
 /* ---------------- row renderers ---------------- */
@@ -2576,7 +2577,7 @@ ROUTES.settings = {
       <div class="hint">ไฟล์ CSV เปิดด้วย Excel หรือ Google Sheets ได้ทันที</div></div>
     <div class="card"><h3>${ic('info')} อื่นๆ</h3>
       <div class="row wrap"><button class="btn" id="oDemo">โหลดข้อมูลตัวอย่าง</button><button class="btn" id="oDemoDel">ลบข้อมูลตัวอย่าง</button><button class="btn" id="oUpd">ตรวจสอบอัปเดตแอพ</button><button class="btn danger" id="oClear">${ic('trash')} ล้างข้อมูลในเครื่อง</button></div>
-      <p class="xs faint" style="margin-top:12px">สวนยางพารา v${APP_VERSION} · เก็บข้อมูลในเครื่องแบบ ${store.mode === 'idb' ? 'IndexedDB' : 'localStorage'} ใช้งานออฟไลน์ได้ · พยากรณ์อากาศจาก Open-Meteo</p></div>`;
+      <p class="xs faint" style="margin-top:12px">${esc(APP_NAME)} v${APP_VERSION} · เก็บข้อมูลในเครื่องแบบ ${store.mode === 'idb' ? 'IndexedDB' : 'localStorage'} ใช้งานออฟไลน์ได้ · พยากรณ์อากาศจาก Open-Meteo</p></div>`;
     const saveConn = async () => { await setS({ scriptUrl: $('#sUrl').value.trim(), apiKey: $('#sKey').value.trim(), autoSync: $('#sAuto').checked }); syncErr = ''; };
     $('#sSave').onclick = async () => { await saveConn(); toast('บันทึกแล้ว', 'ok'); render(); if (S().scriptUrl) sync(true); };
     $('#sNow').onclick = async () => { await saveConn(); await sync(true); render(); };

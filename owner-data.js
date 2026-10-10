@@ -63,8 +63,8 @@ salesFields36.find(x => x.k === 'deduct').l = 'รายการหักอื
 salesFields36.find(x => x.k === 'ownerPct').def = 55;
 salesFields36.splice(salesFields36.findIndex(x => x.k === 'deduct') + 1, 0,
   field36('transportCost', 'ค่ารถขนยาง (บาท)', 'num', { def: () => S().transportCostDefault }),
-  field36('transportPayer', 'ใครรับผิดชอบค่ารถ', 'seg', { opt: { owner: 'พ่อจ่ายจากส่วนของพ่อ', shared: 'หักค่ารถก่อนแบ่งตามสัดส่วน' }, def: () => S().transportPayer || '', re: 1 }),
-  field36('transportMethod', 'วิธีจ่ายค่ารถ', 'seg', { opt: { separate: 'พ่อจ่ายค่ารถต่างหาก', withheld: 'ผู้ซื้อหักจากเงินค่ายาง' }, def: 'separate' }));
+  field36('transportPayer', 'ใครรับผิดชอบค่ารถ', 'seg', { opt: { owner: 'เจ้าของสวนจ่ายจากส่วนของเจ้าของสวน', shared: 'หักค่ารถก่อนแบ่งตามสัดส่วน' }, def: () => S().transportPayer || '', re: 1 }),
+  field36('transportMethod', 'วิธีจ่ายค่ารถ', 'seg', { opt: { separate: 'เจ้าของสวนจ่ายค่ารถต่างหาก', withheld: 'ผู้ซื้อหักจากเงินค่ายาง' }, def: 'separate' }));
 salesFields36.push(field36('dueDate', 'วันครบกำหนดรับเงิน', 'date'));
 for (const [c, k] of [['sales', 'received'], ['sales', 'receivedDate'], ['expenses', 'paid'], ['expenses', 'paidDate']]) {
   const f = SCHEMA[c].fields.find(x => x.k === k), show = f.show; f.show = d => !Farm36.yes(d.installments) && (!show || show(d));
@@ -76,7 +76,7 @@ const previewBefore36 = SCHEMA.sales.preview;
 SCHEMA.sales.preview = d => {
   if (!(num(d.weight) && num(d.price))) return '';
   const c = saleCalc(d);
-  return `<div class="preview"><dl class="kv"><dt>ยอดยางก่อนหัก</dt><dd>${baht(c.gross)}</dd><dt>รายการหักอื่น</dt><dd>${baht(d.deduct)}</dd><dt>ค่ารถ · ${d.transportPayer === 'shared' ? 'หักก่อนแบ่ง' : 'พ่อรับผิดชอบ'}</dt><dd>${baht(d.transportCost)}</dd><dt>คนกรีดรวม ${fmt(100 - c.ownerPct)}%</dt><dd>${baht(c.tapperTotal)}</dd>${c.ids.map(id => `<dt>${esc(workerName(id))}</dt><dd>${baht(c.per[id])}</dd>`).join('')}<dt>ผู้ซื้อต้องจ่าย</dt><dd>${baht(c.net)}</dd></dl><hr class="sep"><div class="row"><b>ส่วนของพ่อหลังค่ารถ</b><span class="sp"></span><b class="big">${baht(c.ownerAfterTransport)}</b></div><p class="hint">เป็นส่วนแบ่งจากการขาย ยังไม่หักค่าใช้จ่ายดูแลสวนอื่น และไม่ใช่ยอดรับเงินจริง</p></div>`;
+  return `<div class="preview"><dl class="kv"><dt>ยอดยางก่อนหัก</dt><dd>${baht(c.gross)}</dd><dt>รายการหักอื่น</dt><dd>${baht(d.deduct)}</dd><dt>ค่ารถ · ${d.transportPayer === 'shared' ? 'หักก่อนแบ่ง' : 'เจ้าของสวนรับผิดชอบ'}</dt><dd>${baht(d.transportCost)}</dd><dt>คนกรีดรวม ${fmt(100 - c.ownerPct)}%</dt><dd>${baht(c.tapperTotal)}</dd>${c.ids.map(id => `<dt>${esc(workerName(id))}</dt><dd>${baht(c.per[id])}</dd>`).join('')}<dt>ผู้ซื้อต้องจ่าย</dt><dd>${baht(c.net)}</dd></dl><hr class="sep"><div class="row"><b>ส่วนของเจ้าของสวนหลังค่ารถ</b><span class="sp"></span><b class="big">${baht(c.ownerAfterTransport)}</b></div><p class="hint">เป็นส่วนแบ่งจากการขาย ยังไม่หักค่าใช้จ่ายดูแลสวนอื่น และไม่ใช่ยอดรับเงินจริง</p></div>`;
 };
 function permitted36(c, r, write = true) {
   return Farm36.access(state36(), { role: role(), ...(META.auth?.permissions || {}) }, c, r, write);
