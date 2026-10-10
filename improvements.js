@@ -151,7 +151,7 @@ saveRec = async function (coll, input, opts = {}) {
 api = async function (action, payload = {}, connection = S()) {
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 60000);
   try {
-    const s = connection; if (!s.scriptUrl || !s.apiKey) throw new Error('ใส่รหัสเข้าสวนครั้งแรกก่อน');
+    const s = connection; if (!s.scriptUrl || !s.apiKey) throw new Error('แตะลิงก์เปิดสวนของครอบครัวครั้งแรกก่อน');
     if (!navigator.onLine) throw new Error('ออฟไลน์อยู่');
     const resp = await fetch(s.scriptUrl, { method: 'POST', body: JSON.stringify({ action, key: s.apiKey, ...payload }), signal: controller.signal });
     let data; try { data = JSON.parse(await resp.text()); } catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง กรุณาตรวจสอบการเชื่อมต่อ'); }
@@ -222,7 +222,7 @@ async function applySync35(data, sent) {
 }
 let syncJob35 = null;
 async function syncRun35(manual) {
-  const s = S(); if (!s.scriptUrl || !s.apiKey) { if (manual) { toast('ใส่รหัสเข้าสวนครั้งแรกก่อน', 'warn'); go('connection37'); } return; }
+  const s = S(); if (!s.scriptUrl || !s.apiKey) { if (manual) { toast('แตะลิงก์เปิดสวนของครอบครัวครั้งแรกก่อน', 'warn'); go('connection37'); } return; }
   if (syncing) return;
   if (!navigator.onLine) { if (manual) toast('เก็บข้อมูลในเครื่องแล้ว จะส่งเมื่อออนไลน์', 'warn'); updateSyncBtn(); return; }
   syncing = true; syncErr = ''; updateSyncBtn();

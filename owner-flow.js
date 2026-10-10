@@ -161,26 +161,11 @@ ROUTES.home.render = function(main) {
   }
 };
 function renderJoin38(main) {
-  main.innerHTML = `<section class="card owner36"><h2>${esc(APP_NAME)}</h2><p>ใส่รหัสเข้าสวนครั้งแรก เครื่องนี้จะจำสิทธิ์และรับข้อมูลสวนอัตโนมัติเมื่อเปิดแอพ</p><form id="joinFarm38"><div class="field"><label class="fl" for="farmCode38">รหัสเข้าสวน 6 หลัก</label><input class="inp farm-code38" id="farmCode38" type="password" inputmode="numeric" autocomplete="off" maxlength="6" required aria-describedby="joinStatus38"></div><button class="btn pri block" id="joinButton38" type="submit">เปิดสวน</button></form><p id="joinStatus38" role="status" aria-live="polite"></p><p class="hint">ใช้รหัสเดียวกันบนเครื่องของเจ้าของสวนและคนในครอบครัว</p><details><summary>กู้ไฟล์สำรอง / การเชื่อมต่ออื่น</summary><button class="btn" data-go="safety">กู้ไฟล์สำรอง</button><button class="btn" data-go="connectionLegacy37">การเชื่อมต่อขั้นสูง</button></details></section>`;
-  $('#joinFarm38', main).onsubmit = async e => {
-    e.preventDefault(); const button = $('#joinButton38', main), input = $('#farmCode38', main), status = $('#joinStatus38', main);
-    if (button.disabled) return;
-    button.disabled = true; status.textContent = 'กำลังเปิดสวนและรับยอดเงิน...';
-    try {
-      await connectFromCode38(input.value); input.value = '';
-      await sync(true);
-      if (syncErr) throw new Error(syncErr);
-      if (!META.lastSyncAt) throw new Error('ยังรับข้อมูลไม่ครบ กรุณาลองอีกครั้ง');
-      viewAllFarms37(); go('home');
-    } catch (error) {
-      if (status.isConnected) status.textContent = error.name === 'AbortError' ? 'เชื่อมไม่ทันเวลา กรุณาลองอีกครั้ง' : error.message;
-    } finally { if (button.isConnected) button.disabled = false; }
-  };
+  main.innerHTML = `<section class="card owner36"><h2>${esc(APP_NAME)}</h2><p>เครื่องใหม่ให้แตะลิงก์ <b>“เปิดสวนของครอบครัว”</b> ที่ได้รับครั้งแรก ข้อมูลสวนและยอดเงินจะขึ้นเอง</p><p>เครื่องนี้จะจำสวนไว้ เปิดครั้งถัดไปจะเชื่อมเอง โดยไม่ต้องกรอกรหัสหรือวางลิงก์</p><details><summary>กู้ไฟล์สำรอง / การเชื่อมต่ออื่น</summary><button class="btn" data-go="safety">กู้ไฟล์สำรอง</button><button class="btn" data-go="connectionLegacy37">การเชื่อมต่อขั้นสูง</button></details></section>`;
 }
 ROUTES.connection37 = { title: 'เชื่อมสวน', render(main) {
   if (!S().scriptUrl || !S().apiKey) return renderJoin38(main);
-  main.innerHTML = `<section class="card owner36"><h2>เครื่องนี้เชื่อมสวนแล้ว</h2><p>เปิดแอพแล้วรับข้อมูลอัตโนมัติ เมื่อบันทึกจะส่งไปสวนเดิม และรับข้อมูลจากเครื่องอื่นทุก 1 นาทีขณะเปิดแอพ</p><p role="status">${syncing ? 'กำลังรับและส่งข้อมูล...' : syncErr ? 'ยังส่งข้อมูลไม่สำเร็จ: ' + esc(syncErr) : META.lastSyncAt ? 'ซิงค์ล่าสุด ' + new Date(META.lastSyncAt).toLocaleString('th-TH') : 'กำลังรอรับข้อมูลครั้งแรก'} · รอส่ง ${dirtyCount()} รายการ</p><button class="btn pri block" id="refreshFarm38">รับยอดล่าสุดตอนนี้</button><button class="btn block" data-go="home">กลับหน้าหลัก</button><p id="refreshStatus38" role="status" aria-live="polite"></p><details><summary>จัดการการเข้าสวน</summary><button class="btn" id="rejoinFarm38">เข้าสวนด้วยรหัสอีกครั้ง</button>${role() === 'owner' ? '<form id="changeCode38"><div class="field"><label class="fl" for="newFarmCode38">เปลี่ยนรหัสเข้าสวนเป็นตัวเลข 6 หลัก</label><input class="inp" id="newFarmCode38" type="password" inputmode="numeric" autocomplete="off" maxlength="6" required></div><p class="hint">เครื่องที่เคยเข้าด้วยรหัสตัวเลขต้องใส่รหัสใหม่อีกครั้ง ข้อมูลที่รอส่งยังเก็บไว้</p><button class="btn" type="submit">เปลี่ยนรหัสเข้าสวน</button><p id="changeCodeStatus38" role="status"></p></form>' : ''}<button class="btn" data-go="safety">สำรองข้อมูล</button><button class="btn" data-go="connectionLegacy37">การเชื่อมต่อขั้นสูง</button></details></section>`;
-  $('#rejoinFarm38', main).onclick = () => renderJoin38(main);
+  main.innerHTML = `<section class="card owner36"><h2>เครื่องนี้เชื่อมสวนแล้ว</h2><p>เปิดแอพแล้วรับข้อมูลอัตโนมัติ เมื่อบันทึกจะส่งไปสวนเดิม และรับข้อมูลจากเครื่องอื่นทุก 1 นาทีขณะเปิดแอพ</p><p role="status">${syncing ? 'กำลังรับและส่งข้อมูล...' : syncErr ? 'ยังส่งข้อมูลไม่สำเร็จ: ' + esc(syncErr) : META.lastSyncAt ? 'ซิงค์ล่าสุด ' + new Date(META.lastSyncAt).toLocaleString('th-TH') : 'กำลังรอรับข้อมูลครั้งแรก'} · รอส่ง ${dirtyCount()} รายการ</p><button class="btn pri block" id="refreshFarm38">รับยอดล่าสุดตอนนี้</button><button class="btn block" data-go="home">กลับหน้าหลัก</button><p id="refreshStatus38" role="status" aria-live="polite"></p>${role() === 'owner' ? '<details><summary>เปิดสวนบนเครื่องอื่น</summary><p>สร้างลิงก์เปิดสวนให้คนในครอบครัว เมื่อเขาแตะลิงก์ ข้อมูลจะเชื่อมเอง ไม่ต้องใส่รหัส</p><button class="btn" id="familyInvite39">สร้างลิงก์เปิดสวน</button><div id="familyInviteResult39" role="status"></div></details>' : ''}<details><summary>สำรอง / การเชื่อมต่ออื่น</summary><button class="btn" data-go="safety">สำรองข้อมูล</button><button class="btn" data-go="connectionLegacy37">การเชื่อมต่อขั้นสูง</button></details></section>`;
   $('#refreshFarm38', main).onclick = async e => {
     const button = e.currentTarget; button.disabled = true;
     try {
@@ -191,17 +176,15 @@ ROUTES.connection37 = { title: 'เชื่อมสวน', render(main) {
     } catch (error) { if (button.isConnected) $('#refreshStatus38', main).textContent = error.message; }
     finally { if (button.isConnected) button.disabled = false; }
   };
-  if ($('#changeCode38', main)) $('#changeCode38', main).onsubmit = async e => {
-    e.preventDefault(); const input = $('#newFarmCode38', main), button = e.currentTarget.querySelector('button'), status = $('#changeCodeStatus38', main);
-    const pin = input.value.replace(/[๐-๙]/g, c => String(c.charCodeAt(0) - 0x0E50));
-    if (!/^\d{6}$/.test(pin)) { status.textContent = 'ใส่รหัสตัวเลขให้ครบ 6 หลัก'; return; }
-    button.disabled = true;
+  if ($('#familyInvite39', main)) $('#familyInvite39', main).onclick = async e => {
+    const button = e.currentTarget, box = $('#familyInviteResult39', main); button.disabled = true;
     try {
-      await api('device.configure', { pin });
-      input.value = ''; status.textContent = 'เปลี่ยนรหัสแล้ว ใช้รหัสใหม่บนเครื่องอื่นได้เลย';
-      // Rotating the code revokes old device tokens, including this one. Keep this phone connected.
-      if (S().apiKey.startsWith('rf-device-')) await connectFromCode38(pin);
-    } catch (error) { status.textContent = error.message; }
+      const invite = await api('device.invite');
+      if (!invite.key) throw new Error('สร้างลิงก์ยังไม่สำเร็จ');
+      const link = setupLinkFor(invite.key);
+      box.innerHTML = `<p><a class="btn pri block" href="${esc(link)}">เปิดสวนของครอบครัว</a></p><button class="btn" id="copyFamilyInvite39">คัดลอกลิงก์ส่งให้ครอบครัว</button><p class="hint">ส่งให้เฉพาะคนที่ช่วยดูแลสวน ลิงก์นี้เปิดดูและบันทึกข้อมูลสวนได้</p>`;
+      $('#copyFamilyInvite39', box).onclick = () => copyText(link);
+    } catch (error) { box.textContent = error.message; }
     finally { button.disabled = false; }
   };
 } };
@@ -245,5 +228,5 @@ ROUTES.phoneCheck37 = { title: 'ลองแอพบนโทรศัพท์
 const menuBefore37 = ROUTES.menu.render;
 ROUTES.menu.render = function(main) { menuBefore37.call(this, main); main.insertAdjacentHTML('afterbegin', '<div class="card"><button class="btn" data-go="connection37">เชื่อมสวน / รับยอดล่าสุด</button><button class="btn" data-go="phoneCheck37">ลองบนโทรศัพท์ของเจ้าของสวน</button></div>'); };
 const style37 = document.createElement('style');
-const joinStyle38 = document.createElement('style'); joinStyle38.textContent = '.farm-code38{font-size:32px;letter-spacing:.25em;text-align:center;min-height:64px}.owner36 #joinButton38{min-height:56px;font-size:20px}.owner36 details{margin-top:24px}.owner36 details .btn{margin-top:12px}'; document.head.appendChild(joinStyle38);
+const joinStyle38 = document.createElement('style'); joinStyle38.textContent = '.owner36 details{margin-top:24px}.owner36 details .btn{margin-top:12px}'; document.head.appendChild(joinStyle38);
 style37.textContent = '.sale-step37[hidden],[data-save][hidden],.sheet button[hidden]{display:none!important}.sale-progress37{font-size:18px;font-weight:700;padding:10px 0;color:var(--pri)}.evidence37{margin:12px 0}.evidence37 .btn{margin:8px 0}.sale-slip37{max-width:740px;margin:auto}.sale-slip37 h2{line-height:1.5}.sale-slip37 .kv{overflow-wrap:anywhere}.sale-step37 .fields{margin-bottom:12px}@media(max-width:480px){.sale-step37 .field.half{width:100%;flex-basis:100%}.sale-progress37{font-size:18px}.sale-step37 .btn{min-height:48px}.sheet-f{flex-wrap:wrap}.sale-slip37{font-size:16px}}@media print{.sale-slip37 .photos{break-inside:avoid}.no-print{display:none!important}.sale-slip37{font-size:13pt;color:#000}}'; document.head.appendChild(style37);
