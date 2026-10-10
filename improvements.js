@@ -248,7 +248,7 @@ sync = async function (manual) {
     if (manual) toast(conflicts ? `มี ${conflicts} รายการต้องตรวจ ไปที่ “ตรวจรายการซิงค์”` : syncErr || (dirtyCount() ? `ยังรอส่ง ${dirtyCount()} รายการ` : 'ส่งข้อมูลและรับคำยืนยันครบแล้ว'), conflicts || syncErr || dirtyCount() ? 'warn' : 'ok');
     if (!$('.overlay')) render();
   } catch (e) { syncErr = e.message; if (manual) toast('ซิงค์ไม่สำเร็จ: ' + e.message, 'err'); }
-  finally { syncing = false; updateSyncBtn(); if (dirtyCount() && !syncErr && !Object.keys(META.conflicts || {}).length && S().autoSync) scheduleSync(); }
+  finally { syncing = false; updateSyncBtn(); if (route.name === 'home' && !list('farms').length) render(); if (dirtyCount() && !syncErr && !Object.keys(META.conflicts || {}).length && S().autoSync) scheduleSync(); }
 };
 const syncBtnRaw35 = updateSyncBtn;
 updateSyncBtn = function () {

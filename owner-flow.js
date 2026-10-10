@@ -141,6 +141,10 @@ ROUTES.sales.render = function(main) {
 };
 
 const homeBefore37 = ROUTES.home.render;
+function viewAllFarms37() {
+  curFarm = 'all'; try { localStorage.setItem('rf_farm', curFarm); } catch (e) { }
+  render();
+}
 ROUTES.home.render = function(main) {
   homeBefore37.call(this, main); if (!ownerMode36() || !list('farms').length) return;
   const cash = cashReport35('0000-01-01', today()), split = Farm36.cashOwnership(state36(), cash.net, today(), curFarm);
@@ -150,10 +154,35 @@ ROUTES.home.render = function(main) {
   const card = document.createElement('section'); card.className = 'card'; card.innerHTML = `<h3>เงินรับ–จ่ายสะสมถึงวันนี้</h3><dl class="kv"><dt>เงินสุทธิจากบันทึก</dt><dd>${baht(split.cashNet)}</dd><dt>เงินรับที่ควรกันไว้ให้คนกรีด</dt><dd>${baht(split.workerReserve)}</dd><dt>เงินส่วนเจ้าของสวนในบันทึก</dt><dd>${baht(split.ownerCash)}</dd></dl><p class="hint">คำนวณเฉพาะเงินที่รับและจ่ายจริง แบ่งเงินรับบางส่วนตามส่วนแบ่งของแต่ละครั้งขาย แล้วหักเงินจ่าย/เบิก/หักกลบที่จัดสรรให้คนกรีด ไม่รวมเงินตั้งต้น จึงไม่ใช่ยอดธนาคาร</p>${split.shortfall ? `<p class="warn">เงินสุทธิจากบันทึกต่ำกว่าเงินที่ควรกันให้คนกรีด ${baht(split.shortfall)} ตรวจยอดรับ–จ่ายและเงินตั้งต้นก่อนใช้ยอดนี้</p>` : ''}${cash.unassigned ? '<p class="warn">มีรายการไม่ระบุสวน ยอดของแต่ละสวนอาจยังไม่ครบ</p>' : ''}<p>รายจ่ายและค่ารถยังค้างจ่าย ${baht(cash.expenseOwed)} · ส่วนแบ่ง/ค่าแรงค้างจ่าย ${baht(cash.workerOwed)}</p><button class="btn" data-go="cash">ดูรายการเงินรับ–จ่าย</button></section>`;
   $('.owner36', main).after(card);
   const alerts = document.createElement('section'); alerts.className = 'card'; alerts.innerHTML = `<h3>เรื่องที่ควรตรวจวันนี้</h3>${due.length ? `<p class="warn">ถึงนัดรับค่ายาง ${due.length} รายการ · ${baht(sum(due, r => Farm36.outstanding(state36(), 'receive', r, today())))}</p><button class="btn" data-go="debts">ตรวจเงินค้างรับ</button>` : '<p>ไม่มีค่ายางถึงนัดรับที่ยังค้าง</p>'}${transport.length ? `<p>ค่ารถยังไม่ได้จ่าย ${transport.length} รายการ</p><button class="btn" data-go="debts">ตรวจค่ารถค้างจ่าย</button>` : ''}${oldBackup ? '<p class="warn">ควรสำรองไฟล์พร้อมรูป: ยังไม่มีไฟล์ หรือเกิน 7 วัน หรือรูปยังไม่ครบ</p><button class="btn" data-go="safety">สำรองข้อมูล</button>' : '<p>มีไฟล์สำรองล่าสุดภายใน 7 วัน</p>'}<button class="btn" data-go="connection37">ตรวจการเชื่อม Google Sheets</button><button class="btn" data-go="phoneCheck37">ลองใช้งานบนโทรศัพท์ของเจ้าของสวน</button>`; card.after(alerts);
+  if (curFarm !== 'all' && !list('sales', inFarm).length && list('sales').length) {
+    const notice = document.createElement('section'); notice.className = 'card';
+    notice.innerHTML = '<h3>ยอดขายอยู่ในสวนอีกชื่อหนึ่ง</h3><p>สวนที่เลือกยังไม่มีรายการขาย แต่เครื่องนี้มีรายการขายของสวนอื่นอยู่แล้ว</p><button class="btn pri block" id="viewAllFarms37">ดูยอดทุกสวน</button>';
+    $('.owner36', main).after(notice); $('#viewAllFarms37', notice).onclick = viewAllFarms37;
+  }
 };
 ROUTES.connection37 = { title: 'เชื่อมข้อมูลและตรวจระบบกลาง', render(main) {
   const last = META.connectionCheck37;
   main.innerHTML = `<div class="card"><h2>ข้อมูลของสวนอยู่ที่ไหน</h2><p>${S().scriptUrl ? 'ตั้งค่าระบบกลางไว้แล้ว' : 'ยังเก็บข้อมูลในเครื่องนี้'} · รอส่ง ${dirtyCount()} รายการ</p><p>เว็บไซต์ฉบับ ${APP_VERSION} ต้องใช้ระบบกลางที่รองรับเงินเป็นงวดและค่ารถ การเผยแพร่เว็บไซต์ไม่ได้อัปเดตระบบกลางให้เอง</p><div id="connectionResult37" role="status">${last ? esc(last.message) + ' · ตรวจ ' + new Date(last.at).toLocaleString('th-TH') : 'ยังไม่ได้ตรวจความพร้อมของระบบกลาง'}</div><button class="btn pri" id="connectionPing37">ตรวจระบบกลางตอนนี้</button><button class="btn" data-go="settings">ตั้งค่าลิงก์และรหัสเชื่อมต่อ</button><button class="btn" data-go="safety">สำรองข้อมูลพร้อมรูป</button><p class="hint">หากยังเป็นฉบับเก่า ให้เจ้าของโปรเจกต์อัปเดต Apps Script เดิมโดยรักษารหัสและ Google Sheets เดิม ข้อมูลในเครื่องที่รอส่งจะยังเก็บไว้</p></div>`;
+  main.insertAdjacentHTML('afterbegin', `<section class="card"><h2>รับยอดเงินจากสวนเดิม</h2><p>หากติดตั้งแล้วไม่เห็นข้อมูล ให้คัดลอกลิงก์เชื่อมสวนที่ได้รับ แล้ววางในแอพที่เปิดจากไอคอนบนหน้าจอมือถือ</p><div class="field"><label class="fl" for="setupLink37">ลิงก์เชื่อมสวน</label><textarea class="inp" id="setupLink37" rows="3" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="วางลิงก์เชื่อมสวนที่นี่"></textarea></div><button class="btn pri block" id="setupConnect37">เชื่อมและดึงยอดเงิน</button>${S().scriptUrl && S().apiKey ? '<button class="btn block" id="pullAll37">ดึงข้อมูลและดูยอดทุกสวน</button>' : ''}<p id="setupStatus37" role="status" aria-live="polite"></p></section>`);
+  const receive = async (button, link) => {
+    button.disabled = true; $('#setupStatus37', main).textContent = 'กำลังเชื่อมและรับยอดเงิน...';
+    try {
+      if (link) await connectFromLink37(link);
+      else { await dataLock35(async () => { const meta = clone35(META); meta.lastPull = 0; await commit35({}, meta); }); }
+      $('#setupLink37', main).value = '';
+      await sync(true);
+      if (syncErr) throw new Error(syncErr);
+      if (syncing || !META.lastSyncAt) throw new Error('กำลังรับข้อมูล กรุณารอสักครู่แล้วลองอีกครั้ง');
+      viewAllFarms37(); go('home');
+    } catch (e) { if (button.isConnected) $('#setupStatus37', main).textContent = 'ยังรับข้อมูลไม่สำเร็จ: ' + e.message; }
+    finally { if (button.isConnected) button.disabled = false; }
+  };
+  $('#setupConnect37', main).onclick = e => {
+    const link = $('#setupLink37', main).value.trim();
+    if (!link) return $('#setupStatus37', main).textContent = 'กรุณาวางลิงก์เชื่อมสวนก่อน';
+    return receive(e.currentTarget, link);
+  };
+  if ($('#pullAll37', main)) $('#pullAll37', main).onclick = e => receive(e.currentTarget);
   $('#connectionPing37', main).onclick = async e => {
     const button = e.currentTarget; button.disabled = true;
     try { const response = await api('ping'); const supported = response.syncProtocol >= 2 && response.ownerAccounting === 1;

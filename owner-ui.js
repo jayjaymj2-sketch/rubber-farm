@@ -161,6 +161,11 @@ function configureOwner36() {
 }
 const advancedHome36 = ROUTES.home.render;
 function ownerStart36(main) {
+  if (S().scriptUrl && S().apiKey && !META.lastSyncAt) {
+    main.innerHTML = `<section class="card owner36"><h2>รับข้อมูลสวนเดิม</h2><p>${syncErr ? 'ยังรับข้อมูลไม่สำเร็จ: ' + esc(syncErr) : navigator.onLine ? 'กำลังรับข้อมูลสวนและยอดเงิน กรุณารอสักครู่' : 'เปิดอินเทอร์เน็ตเพื่อรับข้อมูลสวนและยอดเงิน'}</p><button class="btn pri block" id="firstPull37"${syncing ? ' disabled' : ''}>ดึงข้อมูลสวนอีกครั้ง</button><button class="btn" data-go="connection37">ตรวจการเชื่อมข้อมูล</button></section>`;
+    $('#firstPull37', main).onclick = () => sync(true);
+    return;
+  }
   main.innerHTML = `<section class="card owner36"><h2>เริ่มใช้งาน ${esc(APP_NAME)}</h2><p>เจ้าของสวนจ้างคนกรีด แบ่งเจ้าของสวน 55% คนกรีด 45% ก่อน แล้วเจ้าของสวนจ่ายค่ารถจากส่วนของเจ้าของสวนคนเดียว</p><div class="fields">${input36('startFarm36', 'ชื่อสวน', APP_NAME, 'text')}${input36('startPlot36', 'ชื่อแปลง (ถ้ามี)', '', 'text')}${input36('startWorker36', 'ชื่อคนกรีด', '', 'text')}</div><button class="btn pri block" id="startSave36">เริ่มใช้งาน</button><p class="hint">เพิ่มคนกรีดและแปลงอื่นภายหลังได้ ข้อมูลเก็บในเครื่องนี้จนกว่าจะเชื่อมระบบกลาง</p><button class="btn" data-go="settings">เชื่อมข้อมูลเดิม / กู้ไฟล์สำรอง</button></section>`;
   $('#startSave36', main).onclick = async e => {
     const farmName = $('#startFarm36', main).value.trim(), workerName = $('#startWorker36', main).value.trim(), plotName = $('#startPlot36', main).value.trim();
@@ -170,6 +175,8 @@ function ownerStart36(main) {
       entries.push(['workers', { name: workerName, payType: 'share', ownerPct: 55, plotIds: plotId ? [plotId] : [], active: true }]); await saveBatch36(entries); toast('พร้อมบันทึกขายยางแล้ว', 'ok'); render();
     } catch (e) { toast(e.message, 'warn'); button.disabled = false; }
   };
+  $('#startSave36', main).textContent = 'สร้างสวนใหม่';
+  main.insertAdjacentHTML('afterbegin', '<section class="card"><h2>มีข้อมูลสวนอยู่แล้ว?</h2><p>เชื่อมข้อมูลเดิมเพื่อรับยอดขายและยอดเงินบนเครื่องนี้</p><button class="btn pri block" data-go="connection37">เชื่อมข้อมูลสวนเดิม</button></section>');
 }
 ROUTES.home.render = function(main) {
   if (!ownerMode36()) return advancedHome36.call(this, main);

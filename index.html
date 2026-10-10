@@ -514,7 +514,7 @@ body:has(.overlay) .toasts{bottom:auto;top:calc(env(safe-area-inset-top) + 64px)
 /* =========================================================
    สวนยางพารา — แอพบริหารจัดการสวนยาง (Offline-first PWA)
    ========================================================= */
-const APP_VERSION = '3.7.3';
+const APP_VERSION = '3.7.4';
 const APP_NAME = 'สวนยางหนองหิ้ง บึงกาฬ';
 // ▼ ใส่ URL ของ Apps Script และรหัส API ตรงนี้ เพื่อให้ทุกเครื่องตั้งค่าอัตโนมัติ (ไม่บังคับ)
 const EMBED = { scriptUrl: '', apiKey: '' };
@@ -712,8 +712,8 @@ function markDirty(coll, id) {
 const dirtyCount = () => Object.values(META.dirty || {}).reduce((s, a) => s + a.length, 0);
 
 /* ---------------- API (Google Apps Script) ---------------- */
-async function api(action, payload = {}) {
-  const s = S();
+async function api(action, payload = {}, connection = S()) {
+  const s = connection;
   if (!s.scriptUrl || !s.apiKey) throw new Error('ยังไม่ได้เชื่อมต่อ Google Sheets');
   if (!navigator.onLine) throw new Error('ออฟไลน์อยู่');
   const resp = await fetch(s.scriptUrl, { method: 'POST', body: JSON.stringify(Object.assign({ action, key: s.apiKey }, payload)) });
@@ -1668,7 +1668,11 @@ function renderFarmSel() {
   if (farms.length <= 1) { sel.style.display = 'none'; if (curFarm !== 'all' && !farms.find(f => f.id === curFarm)) curFarm = 'all'; return; }
   if (curFarm !== 'all' && !farms.find(f => f.id === curFarm)) curFarm = 'all';
   sel.style.display = '';
-  sel.innerHTML = `<option value="all">ทุกสวน</option>` + farms.map(f => `<option value="${esc(f.id)}"${f.id === curFarm ? ' selected' : ''}>${esc(f.name)}</option>`).join('');
+  sel.innerHTML = `<option value="all">ทุกสวน</option>` + farms.map(f => {
+    const duplicate = farms.filter(x => String(x.name).normalize('NFC').trim() === String(f.name).normalize('NFC').trim()).length > 1;
+    const suffix = duplicate ? ` · ขาย ${list('sales', r => farmOf(r) === f.id).length} ครั้ง` : '';
+    return `<option value="${esc(f.id)}"${f.id === curFarm ? ' selected' : ''}>${esc(f.name + suffix)}</option>`;
+  }).join('');
   sel.value = curFarm;
 }
 
@@ -2664,6 +2668,34 @@ async function loadDemo() {
 }
 
 /* ---------------- init ---------------- */
+async function connectFromLink37(value) {
+  let hash;
+  try { hash = new URL(String(value).trim(), location.origin + location.pathname).hash; }
+  catch (e) { throw new Error('วางลิงก์เชื่อมสวนที่ได้รับให้ครบ'); }
+  const match = hash.match(/^#setup\?(.*)$/);
+  if (!match) throw new Error('ลิงก์นี้ไม่ใช่ลิงก์เชื่อมสวน');
+  const q = new URLSearchParams(match[1]), scriptUrl = q.get('u') || '', apiKey = q.get('k') || '';
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(scriptUrl) || !apiKey) throw new Error('ลิงก์เชื่อมสวนไม่ครบ กรุณาคัดลอกลิงก์ทั้งหมด');
+  if (S().scriptUrl && S().scriptUrl !== scriptUrl && dirtyCount()) throw new Error('เครื่องนี้มีข้อมูลรอส่งไปสวนเดิม กรุณาส่งข้อมูลให้ครบก่อนเปลี่ยนการเชื่อมต่อ');
+  const info = await api('ping', {}, { scriptUrl, apiKey });
+  if (info.syncProtocol !== 2 || info.ownerAccounting !== 1) throw new Error('ระบบกลางยังไม่รองรับข้อมูลสวนฉบับนี้');
+  await dataLock35(async () => {
+    const meta = clone35(META);
+    meta.settings = { ...meta.settings, scriptUrl, apiKey, autoSync: true };
+    meta.lastPull = 0;
+    meta.auth = { user: info.user, role: info.role, permissions: info.permissions || {}, at: Date.now() };
+    meta.connectionCheck37 = { supported: true, message: `ระบบกลาง ${info.version || ''} รองรับข้อมูลฉบับนี้แล้ว`, at: Date.now() };
+    await commit35({}, meta);
+  });
+  curFarm = 'all'; try { localStorage.setItem('rf_farm', curFarm); } catch (e) { }
+}
+async function acceptSetupHash37() {
+  if (!/^#setup\?/.test(location.hash)) return false;
+  const link = location.origin + location.pathname + location.hash;
+  history.replaceState(null, '', location.pathname + location.search + '#home');
+  try { await connectFromLink37(link); return true; }
+  catch (e) { toast('เชื่อมข้อมูลยังไม่สำเร็จ: ' + e.message, 'warn'); history.replaceState(null, '', location.pathname + location.search + '#connection37'); return false; }
+}
 async function init() {
   buildShell();
   $('#main').innerHTML = `<div class="empty">${LOGO.replace('class="logo"', 'style="width:56px;height:56px;color:var(--pri)"')}<div>กำลังโหลด...</div></div>`;
@@ -2673,16 +2705,11 @@ async function init() {
   if (EMBED.scriptUrl && !META.settings.scriptUrl) { META.settings.scriptUrl = EMBED.scriptUrl; META.settings.apiKey = EMBED.apiKey; }
   const hp = location.hash.match(/^#portal\?(.*)$/);
   if (hp) { const q = new URLSearchParams(hp[1]); if (q.get('u') && q.get('k')) { try { localStorage.setItem('rf_portal', JSON.stringify({ u: q.get('u'), k: q.get('k') })); localStorage.removeItem('rf_portal_cache'); } catch (e) { } } history.replaceState(null, '', location.pathname + location.search + '#portal'); }
-  const hs = location.hash.match(/^#setup\?(.*)$/);
-  if (hs) {
-    const q = new URLSearchParams(hs[1]);
-    if (q.get('u')) { META.settings.scriptUrl = q.get('u'); META.settings.apiKey = q.get('k') || ''; META.settings.autoSync = true; await store.putMeta(); setTimeout(() => toast('เชื่อมต่อ Google Sheets เรียบร้อย', 'ok'), 400); }
-    history.replaceState(null, '', location.pathname + location.search + '#home');
-  }
+  await acceptSetupHash37();
   applyTheme();
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => { if (!p) navigator.storage.persist(); }); } catch (e) { }
   parseHash(); render();
-  window.addEventListener('hashchange', () => { $$('.overlay').forEach(o => closeSheet(o, true)); parseHash(); render(); window.scrollTo(0, 0); });
+  window.addEventListener('hashchange', async () => { $$('.overlay').forEach(o => closeSheet(o, true)); const connected = await acceptSetupHash37(); parseHash(); render(); window.scrollTo(0, 0); if (connected) sync(false); });
   window.addEventListener('online', () => { updateSyncBtn(); sync(false); });
   window.addEventListener('offline', updateSyncBtn);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { sync(false); if (route.name === 'home') loadWeather().then(w => { const el = $('#wxMini'); if (el && w) el.innerHTML = weatherMini(w, true); }).catch(() => { }); } });
@@ -6049,10 +6076,10 @@ function repeatRec(coll, id) {
   };
 })();
 </script>
-<script src="improvements.js?v=3.7.3"></script>
-<script src="owner-domain.js?v=3.7.3"></script>
-<script src="owner-data.js?v=3.7.3"></script>
-<script src="owner-ui.js?v=3.7.3"></script>
-<script src="owner-flow.js?v=3.7.3"></script>
+<script src="improvements.js?v=3.7.4"></script>
+<script src="owner-domain.js?v=3.7.4"></script>
+<script src="owner-data.js?v=3.7.4"></script>
+<script src="owner-ui.js?v=3.7.4"></script>
+<script src="owner-flow.js?v=3.7.4"></script>
 </body>
 </html>
