@@ -4,7 +4,7 @@ for (const c of ['rubberlots', 'settlements', 'budgets', 'tasks', 'healthchecks'
 for (const c of ['settlements', 'tasks', 'healthchecks']) if (!PHOTO_COLLS.includes(c)) PHOTO_COLLS.push(c);
 ACCOUNT_COLLS.push('settlements', 'rubberlots');
 const state36 = () => Object.fromEntries(COLLS.map(c => [c, Object.fromEntries(DB[c])]));
-const ownerMode36 = () => S().ownerView !== false && role() === 'owner';
+const ownerMode36 = () => S().ownerView !== false && (role() === 'owner' || PUBLIC_GARDEN_ACCESS39 && S().scriptUrl === DEFAULT_SYNC_URL38 && !S().apiKey && role() === 'editor');
 const lastUsedBefore36 = lastUsed;
 lastUsed = function(coll) {
   const last = lastUsedBefore36(coll);

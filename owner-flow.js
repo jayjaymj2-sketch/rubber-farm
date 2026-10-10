@@ -161,11 +161,11 @@ ROUTES.home.render = function(main) {
   }
 };
 function renderJoin38(main) {
-  main.innerHTML = `<section class="card owner36"><h2>${esc(APP_NAME)}</h2><p>เครื่องใหม่ให้แตะลิงก์ <b>“เปิดสวนของครอบครัว”</b> ที่ได้รับครั้งแรก ข้อมูลสวนและยอดเงินจะขึ้นเอง</p><p>เครื่องนี้จะจำสวนไว้ เปิดครั้งถัดไปจะเชื่อมเอง โดยไม่ต้องกรอกรหัสหรือวางลิงก์</p><details><summary>กู้ไฟล์สำรอง / การเชื่อมต่ออื่น</summary><button class="btn" data-go="safety">กู้ไฟล์สำรอง</button><button class="btn" data-go="connectionLegacy37">การเชื่อมต่อขั้นสูง</button></details></section>`;
+  main.innerHTML = `<section class="card owner36"><h2>${esc(APP_NAME)}</h2><p>เปิดแอพแล้วรับข้อมูลสวนและยอดเงินอัตโนมัติ ไม่ต้องกรอกรหัสหรือแตะลิงก์เชื่อมสวน</p><p>หากยังไม่มีข้อมูล ให้เปิดอินเทอร์เน็ตแล้วรอสักครู่</p><details><summary>กู้ไฟล์สำรอง / การเชื่อมต่ออื่น</summary><button class="btn" data-go="safety">กู้ไฟล์สำรอง</button><button class="btn" data-go="connectionLegacy37">การเชื่อมต่อขั้นสูง</button></details></section>`;
 }
 ROUTES.connection37 = { title: 'เชื่อมสวน', render(main) {
-  if (!S().scriptUrl || !S().apiKey) return renderJoin38(main);
-  main.innerHTML = `<section class="card owner36"><h2>เครื่องนี้เชื่อมสวนแล้ว</h2><p>เปิดแอพแล้วรับข้อมูลอัตโนมัติ เมื่อบันทึกจะส่งไปสวนเดิม และรับข้อมูลจากเครื่องอื่นทุก 1 นาทีขณะเปิดแอพ</p><p role="status">${syncing ? 'กำลังรับและส่งข้อมูล...' : syncErr ? 'ยังส่งข้อมูลไม่สำเร็จ: ' + esc(syncErr) : META.lastSyncAt ? 'ซิงค์ล่าสุด ' + new Date(META.lastSyncAt).toLocaleString('th-TH') : 'กำลังรอรับข้อมูลครั้งแรก'} · รอส่ง ${dirtyCount()} รายการ</p><button class="btn pri block" id="refreshFarm38">รับยอดล่าสุดตอนนี้</button><button class="btn block" data-go="home">กลับหน้าหลัก</button><p id="refreshStatus38" role="status" aria-live="polite"></p>${role() === 'owner' ? '<details><summary>เปิดสวนบนเครื่องอื่น</summary><p>สร้างลิงก์เปิดสวนให้คนในครอบครัว เมื่อเขาแตะลิงก์ ข้อมูลจะเชื่อมเอง ไม่ต้องใส่รหัส</p><button class="btn" id="familyInvite39">สร้างลิงก์เปิดสวน</button><div id="familyInviteResult39" role="status"></div></details>' : ''}<details><summary>สำรอง / การเชื่อมต่ออื่น</summary><button class="btn" data-go="safety">สำรองข้อมูล</button><button class="btn" data-go="connectionLegacy37">การเชื่อมต่อขั้นสูง</button></details></section>`;
+  if (!hasGardenConnection39()) return renderJoin38(main);
+  main.innerHTML = `<section class="card owner36"><h2>เครื่องนี้เชื่อมสวนแล้ว</h2><p>เปิดแอพแล้วรับข้อมูลอัตโนมัติ เมื่อบันทึกจะส่งไปสวนเดิม และรับข้อมูลจากเครื่องอื่นทุก 1 นาทีขณะเปิดแอพ</p><p role="status">${syncing ? 'กำลังรับและส่งข้อมูล...' : syncErr ? 'ยังส่งข้อมูลไม่สำเร็จ: ' + esc(syncErr) : META.lastSyncAt ? 'ซิงค์ล่าสุด ' + new Date(META.lastSyncAt).toLocaleString('th-TH') : 'กำลังรอรับข้อมูลครั้งแรก'} · รอส่ง ${dirtyCount()} รายการ</p><button class="btn pri block" id="refreshFarm38">รับยอดล่าสุดตอนนี้</button><button class="btn block" data-go="home">กลับหน้าหลัก</button><p id="refreshStatus38" role="status" aria-live="polite"></p><p>เครื่องอื่นเปิดเว็บสวนยางเดิมได้เลย ไม่ต้องตั้งค่าหรือใช้ลิงก์เชื่อมสวน</p><details><summary>สำรอง / การเชื่อมต่ออื่น</summary><button class="btn" data-go="safety">สำรองข้อมูล</button><button class="btn" data-go="connectionLegacy37">การเชื่อมต่อขั้นสูง</button></details></section>`;
   $('#refreshFarm38', main).onclick = async e => {
     const button = e.currentTarget; button.disabled = true;
     try {
@@ -176,17 +176,7 @@ ROUTES.connection37 = { title: 'เชื่อมสวน', render(main) {
     } catch (error) { if (button.isConnected) $('#refreshStatus38', main).textContent = error.message; }
     finally { if (button.isConnected) button.disabled = false; }
   };
-  if ($('#familyInvite39', main)) $('#familyInvite39', main).onclick = async e => {
-    const button = e.currentTarget, box = $('#familyInviteResult39', main); button.disabled = true;
-    try {
-      const invite = await api('device.invite');
-      if (!invite.key) throw new Error('สร้างลิงก์ยังไม่สำเร็จ');
-      const link = setupLinkFor(invite.key);
-      box.innerHTML = `<p><a class="btn pri block" href="${esc(link)}">เปิดสวนของครอบครัว</a></p><button class="btn" id="copyFamilyInvite39">คัดลอกลิงก์ส่งให้ครอบครัว</button><p class="hint">ส่งให้เฉพาะคนที่ช่วยดูแลสวน ลิงก์นี้เปิดดูและบันทึกข้อมูลสวนได้</p>`;
-      $('#copyFamilyInvite39', box).onclick = () => copyText(link);
-    } catch (error) { box.textContent = error.message; }
-    finally { button.disabled = false; }
-  };
+
 } };
 ROUTES.connectionLegacy37 = { title: 'การเชื่อมต่อขั้นสูง', render(main) {
   const last = META.connectionCheck37;

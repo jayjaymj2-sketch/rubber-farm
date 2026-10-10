@@ -514,12 +514,16 @@ body:has(.overlay) .toasts{bottom:auto;top:calc(env(safe-area-inset-top) + 64px)
 /* =========================================================
    สวนยางพารา — แอพบริหารจัดการสวนยาง (Offline-first PWA)
    ========================================================= */
-const APP_VERSION = '3.8.2';
+const APP_VERSION = '3.9.0';
 const APP_NAME = 'สวนยาง';
 // ▼ ใส่ URL ของ Apps Script และรหัส API ตรงนี้ เพื่อให้ทุกเครื่องตั้งค่าอัตโนมัติ (ไม่บังคับ)
 const EMBED = { scriptUrl: '', apiKey: '' };
 // Public service address only; family access tokens are kept in private links.
 const DEFAULT_SYNC_URL38 = 'https://script.google.com/macros/s/AKfycbyLJC7d1ToC2xbnYYIlJdenpi5d21_fr3gX7e219gcd-hDaqWAMLBCSIvd173Dg362i/exec';
+const PUBLIC_GARDEN_ACCESS39 = true;
+function hasGardenConnection39(connection = S()) {
+  return !!(connection.scriptUrl && (connection.apiKey || PUBLIC_GARDEN_ACCESS39 && connection.scriptUrl === DEFAULT_SYNC_URL38));
+}
 
 /* ---------------- utils ---------------- */
 const $ = (s, el = document) => el.querySelector(s);
@@ -680,6 +684,7 @@ const S = () => {
   const current = Object.assign({ ownerPct: 55, ownerView: true, transportPayer: 'owner', transportCostDefault: 200, dailyWage: 350, lat: 18.3609, lon: 103.6464, place: 'บึงกาฬ', theme: 'auto', autoSync: true, expCats: DEFAULT_EXP_CATS.join('\n'), scriptUrl: EMBED.scriptUrl, apiKey: EMBED.apiKey, bagKg: 50, simple: false, refYield: 250, cupDrc: 50, autoPrice: true }, s);
   // Apply the father's corrected agreement to new-sale defaults, never historical records.
   if (s.transportAgreementRevision !== 1) { current.transportPayer = 'owner'; current.transportCostDefault = 200; }
+  if (PUBLIC_GARDEN_ACCESS39 && !current.scriptUrl) current.scriptUrl = DEFAULT_SYNC_URL38;
   return current;
 };
 const setS = async patch => dataLock35(async () => { const meta = clone35(META); meta.settings = Object.assign(meta.settings || {}, patch); if ('transportPayer' in patch || 'transportCostDefault' in patch) meta.settings.transportAgreementRevision = 1; await commit35({}, meta); });
@@ -716,7 +721,7 @@ const dirtyCount = () => Object.values(META.dirty || {}).reduce((s, a) => s + a.
 /* ---------------- API (Google Apps Script) ---------------- */
 async function api(action, payload = {}, connection = S()) {
   const s = connection;
-  if (!s.scriptUrl || !s.apiKey) throw new Error('ยังไม่ได้เชื่อมต่อ Google Sheets');
+  if (!hasGardenConnection39(s)) throw new Error('ยังไม่ได้เชื่อมต่อ Google Sheets');
   if (!navigator.onLine) throw new Error('ออฟไลน์อยู่');
   const resp = await fetch(s.scriptUrl, { method: 'POST', body: JSON.stringify(Object.assign({ action, key: s.apiKey }, payload)) });
   const text = await resp.text();
@@ -790,7 +795,7 @@ function coerce(coll, rec) {
 
 async function sync(manual) {
   const s = S();
-  if (!s.scriptUrl || !s.apiKey) { if (manual) { toast('ยังไม่ได้ตั้งค่าการเชื่อมต่อ Google Sheets', 'warn'); go('settings'); } updateSyncBtn(); return; }
+  if (!hasGardenConnection39(s)) { if (manual) { toast('ยังไม่ได้ตั้งค่าการเชื่อมต่อ Google Sheets', 'warn'); go('settings'); } updateSyncBtn(); return; }
   if (syncing) return;
   if (!navigator.onLine) { if (manual) toast('ออฟไลน์อยู่ ข้อมูลจะซิงค์เมื่อมีอินเทอร์เน็ต', 'warn'); updateSyncBtn(); return; }
   syncing = true; syncErr = ''; updateSyncBtn();
@@ -2679,7 +2684,7 @@ async function connectFromLink37(value) {
   if (!match) throw new Error('ลิงก์นี้ไม่ใช่ลิงก์เชื่อมสวน');
   const q = new URLSearchParams(match[1]), scriptUrl = q.get('u') || '', apiKey = q.get('k') || '';
   if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(scriptUrl) || !apiKey) throw new Error('ลิงก์เชื่อมสวนไม่ครบ กรุณาคัดลอกลิงก์ทั้งหมด');
-  if (S().scriptUrl && S().scriptUrl !== scriptUrl && dirtyCount()) throw new Error('เครื่องนี้มีข้อมูลรอส่งไปสวนเดิม กรุณาส่งข้อมูลให้ครบก่อนเปลี่ยนการเชื่อมต่อ');
+  if (META.settings?.scriptUrl && S().scriptUrl !== scriptUrl && dirtyCount()) throw new Error('เครื่องนี้มีข้อมูลรอส่งไปสวนเดิม กรุณาส่งข้อมูลให้ครบก่อนเปลี่ยนการเชื่อมต่อ');
   const info = await api('ping', {}, { scriptUrl, apiKey });
   if (info.syncProtocol !== 2 || info.ownerAccounting !== 1) throw new Error('ระบบกลางยังไม่รองรับข้อมูลสวนฉบับนี้');
   await dataLock35(async () => {
@@ -2699,6 +2704,23 @@ async function acceptSetupHash37() {
   try { await connectFromLink37(link); return true; }
   catch (e) { toast('เชื่อมข้อมูลยังไม่สำเร็จ: ' + e.message, 'warn'); history.replaceState(null, '', location.pathname + location.search + '#connection37'); return false; }
 }
+async function prepareDefaultGarden39() {
+  if (!PUBLIC_GARDEN_ACCESS39 || /^#portal/.test(location.hash) || (typeof isPortal === 'function' && isPortal())) return;
+  const saved = META.settings || {};
+  if (saved.scriptUrl && saved.scriptUrl !== DEFAULT_SYNC_URL38) return;
+  await dataLock35(async () => {
+    const meta = clone35(META);
+    meta.settings = { ...meta.settings, scriptUrl: DEFAULT_SYNC_URL38, autoSync: true };
+    if (!saved.scriptUrl) {
+      meta.lastPull = 0;
+      if (!meta.settings.apiKey) meta.auth = { user: 'ผู้ใช้สวนยาง', role: 'editor', permissions: {} };
+    }
+    await commit35({}, meta);
+  });
+  if (!saved.scriptUrl) {
+    curFarm = 'all'; try { localStorage.setItem('rf_farm', curFarm); } catch (e) { }
+  }
+}
 async function init() {
   buildShell();
   $('#main').innerHTML = `<div class="empty">${LOGO.replace('class="logo"', 'style="width:56px;height:56px;color:var(--pri)"')}<div>กำลังโหลด...</div></div>`;
@@ -2709,7 +2731,7 @@ async function init() {
   const hp = location.hash.match(/^#portal\?(.*)$/);
   if (hp) { const q = new URLSearchParams(hp[1]); if (q.get('u') && q.get('k')) { try { localStorage.setItem('rf_portal', JSON.stringify({ u: q.get('u'), k: q.get('k') })); localStorage.removeItem('rf_portal_cache'); } catch (e) { } } history.replaceState(null, '', location.pathname + location.search + '#portal'); }
   await acceptSetupHash37();
-  if (S().scriptUrl === DEFAULT_SYNC_URL38 && S().apiKey) await setS({ autoSync: true });
+  await prepareDefaultGarden39();
   applyTheme();
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => { if (!p) navigator.storage.persist(); }); } catch (e) { }
   parseHash(); render();
@@ -2718,7 +2740,7 @@ async function init() {
   window.addEventListener('offline', updateSyncBtn);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { sync(false); if (route.name === 'home') loadWeather().then(w => { const el = $('#wxMini'); if (el && w) el.innerHTML = weatherMini(w, true); }).catch(() => { }); } });
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
-  setInterval(() => { if (!document.hidden && S().autoSync && S().apiKey) sync(false); }, 60e3);
+  setInterval(() => { if (!document.hidden && S().autoSync && hasGardenConnection39()) sync(false); }, 60e3);
   if (S().scriptUrl) sync(false);
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('sw.js').then(reg => {
@@ -6080,10 +6102,10 @@ function repeatRec(coll, id) {
   };
 })();
 </script>
-<script src="improvements.js?v=3.8.2"></script>
-<script src="owner-domain.js?v=3.8.2"></script>
-<script src="owner-data.js?v=3.8.2"></script>
-<script src="owner-ui.js?v=3.8.2"></script>
-<script src="owner-flow.js?v=3.8.2"></script>
+<script src="improvements.js?v=3.9.0"></script>
+<script src="owner-domain.js?v=3.9.0"></script>
+<script src="owner-data.js?v=3.9.0"></script>
+<script src="owner-ui.js?v=3.9.0"></script>
+<script src="owner-flow.js?v=3.9.0"></script>
 </body>
 </html>

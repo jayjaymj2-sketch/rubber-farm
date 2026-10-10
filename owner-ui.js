@@ -161,8 +161,8 @@ function configureOwner36() {
 }
 const advancedHome36 = ROUTES.home.render;
 function ownerStart36(main) {
-  if (!S().apiKey) return renderJoin38(main);
-  if (S().scriptUrl && S().apiKey && !META.lastSyncAt) {
+  if (!hasGardenConnection39()) return renderJoin38(main);
+  if (hasGardenConnection39() && !META.lastSyncAt) {
     main.innerHTML = `<section class="card owner36"><h2>รับข้อมูลสวนเดิม</h2><p>${syncErr ? 'ยังรับข้อมูลไม่สำเร็จ: ' + esc(syncErr) : navigator.onLine ? 'กำลังรับข้อมูลสวนและยอดเงิน กรุณารอสักครู่' : 'เปิดอินเทอร์เน็ตเพื่อรับข้อมูลสวนและยอดเงิน'}</p><button class="btn pri block" id="firstPull37"${syncing ? ' disabled' : ''}>ดึงข้อมูลสวนอีกครั้ง</button><button class="btn" data-go="connection37">ตรวจการเชื่อมข้อมูล</button></section>`;
     $('#firstPull37', main).onclick = () => sync(true);
     return;
