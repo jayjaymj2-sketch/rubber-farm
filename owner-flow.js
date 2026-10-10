@@ -217,6 +217,59 @@ ROUTES.phoneCheck37 = { title: 'ลองแอพบนโทรศัพท์
 } };
 const menuBefore37 = ROUTES.menu.render;
 ROUTES.menu.render = function(main) { menuBefore37.call(this, main); main.insertAdjacentHTML('afterbegin', '<div class="card"><button class="btn" data-go="connection37">เชื่อมสวน / รับยอดล่าสุด</button><button class="btn" data-go="phoneCheck37">ลองบนโทรศัพท์ของเจ้าของสวน</button></div>'); };
+// Adapt to phone width, browser controls, cutouts and the on-screen keyboard.
+const responsiveStyle391 = document.createElement('style');
+responsiveStyle391.textContent = `
+:root{--app-width:1100px}
+body{min-height:100dvh}
+main{width:100%;max-width:var(--app-width);min-width:0;padding:12px max(12px,env(safe-area-inset-right)) calc(var(--nav-h) + 24px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+body:has(.fab) main{padding-bottom:calc(var(--nav-h) + 88px + env(safe-area-inset-bottom))}
+.nav-in{max-width:var(--app-width);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+.top{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+.top h1,.top h1 span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.top .sync-btn,.top .back,.sheet-h .x{flex-shrink:0}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.fields{grid-template-columns:repeat(6,minmax(0,1fr))}
+.menu-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card,.card>*,.row>*,.actions36>*,.actions35>*,.menu-grid>*{min-width:0}
+.btn{min-width:0;white-space:normal;overflow-wrap:anywhere}
+.fab{right:max(16px,env(safe-area-inset-right),calc((100vw - var(--app-width)) / 2 + 16px))}
+.tbl-wrap{min-width:0;max-width:100%}
+.kv{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px}
+.kv dt,.kv dd{min-width:0;overflow-wrap:anywhere}
+.sheet{min-width:0;max-height:calc(100dvh - max(8px,env(safe-area-inset-top)))}
+.sheet-h,.sheet-f{flex-shrink:0}
+.sheet-h h2{min-width:0;overflow-wrap:anywhere}
+.sheet-b{min-width:0;min-height:0;overscroll-behavior:contain}
+.sheet-f{flex-wrap:wrap}
+.sheet-f .btn{flex:1 1 100px}
+img,video,canvas{max-width:100%}
+.worker35{max-width:100%;overflow-wrap:anywhere}
+@media(max-width:480px){
+  .field.half,.field.third,.sale-step37 .field.half{grid-column:span 6}
+  body.owner-mode36 .actions36{gap:10px;margin:12px 0}
+  body.owner-mode36 .actions36 .btn{flex-direction:column;min-height:78px;padding:10px 8px;font-size:16px;line-height:1.5}
+  .sheet-h,.sheet-b,.sheet-f{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+  .owner-sale-row36{flex-wrap:wrap}
+  .owner-sale-row36 b{max-width:100%;overflow-wrap:anywhere}
+  .row.wrap .btn{max-width:100%}
+  .tbl.stackable td{min-width:0;overflow-wrap:anywhere;white-space:normal}
+}
+@media(max-width:420px){.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:359px){
+  main{padding-top:8px;padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+  .card{padding:12px}
+  body.owner-mode36 .actions36{grid-template-columns:1fr;gap:8px}
+  body.owner-mode36 .actions36 .btn{flex-direction:row;min-height:50px;font-size:16px}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(min-width:560px){.menu-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:700px){.sheet{max-height:90dvh}}
+@media print{main{width:100%;max-width:none;padding:0}body:has(.fab) main{padding-bottom:0}}
+`;
+document.head.appendChild(responsiveStyle391);
 const style37 = document.createElement('style');
 const joinStyle38 = document.createElement('style'); joinStyle38.textContent = '.owner36 details{margin-top:24px}.owner36 details .btn{margin-top:12px}'; document.head.appendChild(joinStyle38);
 style37.textContent = '.sale-step37[hidden],[data-save][hidden],.sheet button[hidden]{display:none!important}.sale-progress37{font-size:18px;font-weight:700;padding:10px 0;color:var(--pri)}.evidence37{margin:12px 0}.evidence37 .btn{margin:8px 0}.sale-slip37{max-width:740px;margin:auto}.sale-slip37 h2{line-height:1.5}.sale-slip37 .kv{overflow-wrap:anywhere}.sale-step37 .fields{margin-bottom:12px}@media(max-width:480px){.sale-step37 .field.half{width:100%;flex-basis:100%}.sale-progress37{font-size:18px}.sale-step37 .btn{min-height:48px}.sheet-f{flex-wrap:wrap}.sale-slip37{font-size:16px}}@media print{.sale-slip37 .photos{break-inside:avoid}.no-print{display:none!important}.sale-slip37{font-size:13pt;color:#000}}'; document.head.appendChild(style37);
