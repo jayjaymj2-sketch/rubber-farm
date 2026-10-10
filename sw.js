@@ -1,6 +1,6 @@
 /* Service worker — สวนยางพารา */
 const CACHE = 'rubberfarm-v3.7.2';
-const SHELL = ['./', './index.html', './improvements.js', './owner-domain.js', './owner-data.js', './owner-ui.js', './owner-flow.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './icon-180.png'];
+const SHELL = ['./', './index.html', './improvements.js?v=3.7.2', './owner-domain.js?v=3.7.2', './owner-data.js?v=3.7.2', './owner-ui.js?v=3.7.2', './owner-flow.js?v=3.7.2', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './icon-180.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
