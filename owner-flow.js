@@ -160,7 +160,52 @@ ROUTES.home.render = function(main) {
     $('.owner36', main).after(notice); $('#viewAllFarms37', notice).onclick = viewAllFarms37;
   }
 };
-ROUTES.connection37 = { title: 'เชื่อมข้อมูลและตรวจระบบกลาง', render(main) {
+function renderJoin38(main) {
+  main.innerHTML = `<section class="card owner36"><h2>${esc(APP_NAME)}</h2><p>ใส่รหัสเข้าสวนครั้งแรก เครื่องนี้จะจำสิทธิ์และรับข้อมูลสวนอัตโนมัติเมื่อเปิดแอพ</p><form id="joinFarm38"><div class="field"><label class="fl" for="farmCode38">รหัสเข้าสวน 6 หลัก</label><input class="inp farm-code38" id="farmCode38" type="password" inputmode="numeric" autocomplete="off" maxlength="6" required aria-describedby="joinStatus38"></div><button class="btn pri block" id="joinButton38" type="submit">เปิดสวน</button></form><p id="joinStatus38" role="status" aria-live="polite"></p><p class="hint">ใช้รหัสเดียวกันบนเครื่องของเจ้าของสวนและคนในครอบครัว</p><details><summary>กู้ไฟล์สำรอง / การเชื่อมต่ออื่น</summary><button class="btn" data-go="safety">กู้ไฟล์สำรอง</button><button class="btn" data-go="connectionLegacy37">การเชื่อมต่อขั้นสูง</button></details></section>`;
+  $('#joinFarm38', main).onsubmit = async e => {
+    e.preventDefault(); const button = $('#joinButton38', main), input = $('#farmCode38', main), status = $('#joinStatus38', main);
+    if (button.disabled) return;
+    button.disabled = true; status.textContent = 'กำลังเปิดสวนและรับยอดเงิน...';
+    try {
+      await connectFromCode38(input.value); input.value = '';
+      await sync(true);
+      if (syncErr) throw new Error(syncErr);
+      if (!META.lastSyncAt) throw new Error('ยังรับข้อมูลไม่ครบ กรุณาลองอีกครั้ง');
+      viewAllFarms37(); go('home');
+    } catch (error) {
+      if (status.isConnected) status.textContent = error.name === 'AbortError' ? 'เชื่อมไม่ทันเวลา กรุณาลองอีกครั้ง' : error.message;
+    } finally { if (button.isConnected) button.disabled = false; }
+  };
+}
+ROUTES.connection37 = { title: 'เชื่อมสวน', render(main) {
+  if (!S().scriptUrl || !S().apiKey) return renderJoin38(main);
+  main.innerHTML = `<section class="card owner36"><h2>เครื่องนี้เชื่อมสวนแล้ว</h2><p>เปิดแอพแล้วรับข้อมูลอัตโนมัติ เมื่อบันทึกจะส่งไปสวนเดิม และรับข้อมูลจากเครื่องอื่นทุก 1 นาทีขณะเปิดแอพ</p><p role="status">${syncing ? 'กำลังรับและส่งข้อมูล...' : syncErr ? 'ยังส่งข้อมูลไม่สำเร็จ: ' + esc(syncErr) : META.lastSyncAt ? 'ซิงค์ล่าสุด ' + new Date(META.lastSyncAt).toLocaleString('th-TH') : 'กำลังรอรับข้อมูลครั้งแรก'} · รอส่ง ${dirtyCount()} รายการ</p><button class="btn pri block" id="refreshFarm38">รับยอดล่าสุดตอนนี้</button><button class="btn block" data-go="home">กลับหน้าหลัก</button><p id="refreshStatus38" role="status" aria-live="polite"></p><details><summary>จัดการการเข้าสวน</summary><button class="btn" id="rejoinFarm38">เข้าสวนด้วยรหัสอีกครั้ง</button>${role() === 'owner' ? '<form id="changeCode38"><div class="field"><label class="fl" for="newFarmCode38">เปลี่ยนรหัสเข้าสวนเป็นตัวเลข 6 หลัก</label><input class="inp" id="newFarmCode38" type="password" inputmode="numeric" autocomplete="off" maxlength="6" required></div><p class="hint">เครื่องที่เคยเข้าด้วยรหัสตัวเลขต้องใส่รหัสใหม่อีกครั้ง ข้อมูลที่รอส่งยังเก็บไว้</p><button class="btn" type="submit">เปลี่ยนรหัสเข้าสวน</button><p id="changeCodeStatus38" role="status"></p></form>' : ''}<button class="btn" data-go="safety">สำรองข้อมูล</button><button class="btn" data-go="connectionLegacy37">การเชื่อมต่อขั้นสูง</button></details></section>`;
+  $('#rejoinFarm38', main).onclick = () => renderJoin38(main);
+  $('#refreshFarm38', main).onclick = async e => {
+    const button = e.currentTarget; button.disabled = true;
+    try {
+      if (syncing) await sync(false);
+      await dataLock35(async () => { const meta = clone35(META); meta.lastPull = 0; await commit35({}, meta); });
+      await sync(true); if (syncErr) throw new Error(syncErr);
+      viewAllFarms37(); go('home');
+    } catch (error) { if (button.isConnected) $('#refreshStatus38', main).textContent = error.message; }
+    finally { if (button.isConnected) button.disabled = false; }
+  };
+  if ($('#changeCode38', main)) $('#changeCode38', main).onsubmit = async e => {
+    e.preventDefault(); const input = $('#newFarmCode38', main), button = e.currentTarget.querySelector('button'), status = $('#changeCodeStatus38', main);
+    const pin = input.value.replace(/[๐-๙]/g, c => String(c.charCodeAt(0) - 0x0E50));
+    if (!/^\d{6}$/.test(pin)) { status.textContent = 'ใส่รหัสตัวเลขให้ครบ 6 หลัก'; return; }
+    button.disabled = true;
+    try {
+      await api('device.configure', { pin });
+      input.value = ''; status.textContent = 'เปลี่ยนรหัสแล้ว ใช้รหัสใหม่บนเครื่องอื่นได้เลย';
+      // Rotating the code revokes old device tokens, including this one. Keep this phone connected.
+      if (S().apiKey.startsWith('rf-device-')) await connectFromCode38(pin);
+    } catch (error) { status.textContent = error.message; }
+    finally { button.disabled = false; }
+  };
+} };
+ROUTES.connectionLegacy37 = { title: 'การเชื่อมต่อขั้นสูง', render(main) {
   const last = META.connectionCheck37;
   main.innerHTML = `<div class="card"><h2>ข้อมูลของสวนอยู่ที่ไหน</h2><p>${S().scriptUrl ? 'ตั้งค่าระบบกลางไว้แล้ว' : 'ยังเก็บข้อมูลในเครื่องนี้'} · รอส่ง ${dirtyCount()} รายการ</p><p>เว็บไซต์ฉบับ ${APP_VERSION} ต้องใช้ระบบกลางที่รองรับเงินเป็นงวดและค่ารถ การเผยแพร่เว็บไซต์ไม่ได้อัปเดตระบบกลางให้เอง</p><div id="connectionResult37" role="status">${last ? esc(last.message) + ' · ตรวจ ' + new Date(last.at).toLocaleString('th-TH') : 'ยังไม่ได้ตรวจความพร้อมของระบบกลาง'}</div><button class="btn pri" id="connectionPing37">ตรวจระบบกลางตอนนี้</button><button class="btn" data-go="settings">ตั้งค่าลิงก์และรหัสเชื่อมต่อ</button><button class="btn" data-go="safety">สำรองข้อมูลพร้อมรูป</button><p class="hint">หากยังเป็นฉบับเก่า ให้เจ้าของโปรเจกต์อัปเดต Apps Script เดิมโดยรักษารหัสและ Google Sheets เดิม ข้อมูลในเครื่องที่รอส่งจะยังเก็บไว้</p></div>`;
   main.insertAdjacentHTML('afterbegin', `<section class="card"><h2>รับยอดเงินจากสวนเดิม</h2><p>หากติดตั้งแล้วไม่เห็นข้อมูล ให้คัดลอกลิงก์เชื่อมสวนที่ได้รับ แล้ววางในแอพที่เปิดจากไอคอนบนหน้าจอมือถือ</p><div class="field"><label class="fl" for="setupLink37">ลิงก์เชื่อมสวน</label><textarea class="inp" id="setupLink37" rows="3" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="วางลิงก์เชื่อมสวนที่นี่"></textarea></div><button class="btn pri block" id="setupConnect37">เชื่อมและดึงยอดเงิน</button>${S().scriptUrl && S().apiKey ? '<button class="btn block" id="pullAll37">ดึงข้อมูลและดูยอดทุกสวน</button>' : ''}<p id="setupStatus37" role="status" aria-live="polite"></p></section>`);
@@ -198,6 +243,7 @@ ROUTES.phoneCheck37 = { title: 'ลองแอพบนโทรศัพท์
   main.innerHTML = `<div class="card"><h2>ให้เจ้าของสวนลองด้วยโทรศัพท์ที่ใช้จริง</h2><p>เปิดเว็บสวนเดิมบนโทรศัพท์ และใช้การขายจริงครั้งถัดไป หลีกเลี่ยงการเพิ่มยอดทดลองลงบัญชีสวนจริง</p><ol><li>อ่านตัวหนังสือและกดขายยางได้สะดวก</li><li>กรอกน้ำหนัก ราคา และค่ารถด้วยแป้นตัวเลข</li><li>กดย้อนกลับแล้วข้อมูลที่กรอกยังอยู่</li><li>แนบใบชั่งและตรวจเจ้าของสวน 55% คนกรีด 45%</li><li>หลังบันทึก ตรวจสถานะเก็บในเครื่อง / ส่งข้อมูลสำเร็จ</li><li>ลองเปิดแอพที่ติดตั้งไว้เมื่อปิดอินเทอร์เน็ต โดยไม่บันทึกยอดซ้ำ</li><li>เปิดอินเทอร์เน็ตแล้วตรวจข้อมูลที่รอส่ง และสำรองไฟล์พร้อมรูป</li></ol><p class="hint">การตรวจหน้าจอขนาดมือถือบนคอมพิวเตอร์ไม่ยืนยันว่าทดสอบบนโทรศัพท์ของเจ้าของสวนแล้ว หากอ่านยากหรือปุ่มกดยาก ให้แจ้งรุ่นโทรศัพท์และจุดที่ติดขัด</p><button class="btn" data-go="home">กลับหน้าหลัก</button></div>`;
 } };
 const menuBefore37 = ROUTES.menu.render;
-ROUTES.menu.render = function(main) { menuBefore37.call(this, main); main.insertAdjacentHTML('afterbegin', '<div class="card"><button class="btn" data-go="connection37">ตรวจ Google Sheets</button><button class="btn" data-go="phoneCheck37">ลองบนโทรศัพท์ของเจ้าของสวน</button></div>'); };
+ROUTES.menu.render = function(main) { menuBefore37.call(this, main); main.insertAdjacentHTML('afterbegin', '<div class="card"><button class="btn" data-go="connection37">เชื่อมสวน / รับยอดล่าสุด</button><button class="btn" data-go="phoneCheck37">ลองบนโทรศัพท์ของเจ้าของสวน</button></div>'); };
 const style37 = document.createElement('style');
+const joinStyle38 = document.createElement('style'); joinStyle38.textContent = '.farm-code38{font-size:32px;letter-spacing:.25em;text-align:center;min-height:64px}.owner36 #joinButton38{min-height:56px;font-size:20px}.owner36 details{margin-top:24px}.owner36 details .btn{margin-top:12px}'; document.head.appendChild(joinStyle38);
 style37.textContent = '.sale-step37[hidden],[data-save][hidden],.sheet button[hidden]{display:none!important}.sale-progress37{font-size:18px;font-weight:700;padding:10px 0;color:var(--pri)}.evidence37{margin:12px 0}.evidence37 .btn{margin:8px 0}.sale-slip37{max-width:740px;margin:auto}.sale-slip37 h2{line-height:1.5}.sale-slip37 .kv{overflow-wrap:anywhere}.sale-step37 .fields{margin-bottom:12px}@media(max-width:480px){.sale-step37 .field.half{width:100%;flex-basis:100%}.sale-progress37{font-size:18px}.sale-step37 .btn{min-height:48px}.sheet-f{flex-wrap:wrap}.sale-slip37{font-size:16px}}@media print{.sale-slip37 .photos{break-inside:avoid}.no-print{display:none!important}.sale-slip37{font-size:13pt;color:#000}}'; document.head.appendChild(style37);

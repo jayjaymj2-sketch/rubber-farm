@@ -514,10 +514,12 @@ body:has(.overlay) .toasts{bottom:auto;top:calc(env(safe-area-inset-top) + 64px)
 /* =========================================================
    สวนยางพารา — แอพบริหารจัดการสวนยาง (Offline-first PWA)
    ========================================================= */
-const APP_VERSION = '3.7.4';
+const APP_VERSION = '3.8.0';
 const APP_NAME = 'สวนยางหนองหิ้ง บึงกาฬ';
 // ▼ ใส่ URL ของ Apps Script และรหัส API ตรงนี้ เพื่อให้ทุกเครื่องตั้งค่าอัตโนมัติ (ไม่บังคับ)
 const EMBED = { scriptUrl: '', apiKey: '' };
+// Public service address only; codes and device credentials are issued privately by the backend.
+const DEFAULT_SYNC_URL38 = 'https://script.google.com/macros/s/AKfycbyLJC7d1ToC2xbnYYIlJdenpi5d21_fr3gX7e219gcd-hDaqWAMLBCSIvd173Dg362i/exec';
 
 /* ---------------- utils ---------------- */
 const $ = (s, el = document) => el.querySelector(s);
@@ -2668,6 +2670,23 @@ async function loadDemo() {
 }
 
 /* ---------------- init ---------------- */
+async function connectFromCode38(value) {
+  if (syncing) await sync(false);
+  const pin = String(value).trim().replace(/[๐-๙]/g, c => String(c.charCodeAt(0) - 0x0E50));
+  if (!/^\d{6}$/.test(pin)) throw new Error('ใส่รหัสตัวเลขให้ครบ 6 หลัก');
+  if (S().scriptUrl && S().scriptUrl !== DEFAULT_SYNC_URL38 && dirtyCount()) throw new Error('มีข้อมูลรอส่งไปสวนเดิม กรุณาส่งให้ครบก่อนเปลี่ยนสวน');
+  if (!navigator.onLine) throw new Error('เปิดอินเทอร์เน็ตเพื่อเชื่อมครั้งแรก');
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 30000);
+  let result;
+  try {
+    const response = await fetch(DEFAULT_SYNC_URL38, { method: 'POST', body: JSON.stringify({ action: 'device.connect', pin }), signal: controller.signal });
+    if (!response.ok) throw new Error('เชื่อมสวนยังไม่สำเร็จ กรุณาลองอีกครั้ง');
+    result = await response.json();
+  } finally { clearTimeout(timer); }
+  if (!result.ok) throw new Error(result.error || 'เชื่อมสวนยังไม่สำเร็จ');
+  if (!result.key || result.syncProtocol !== 2 || result.ownerAccounting !== 1) throw new Error('ระบบกลางยังไม่พร้อม กรุณาลองอีกครั้ง');
+  await connectFromLink37(location.origin + location.pathname + '#setup?u=' + encodeURIComponent(DEFAULT_SYNC_URL38) + '&k=' + encodeURIComponent(result.key));
+}
 async function connectFromLink37(value) {
   if (syncing) await sync(false);
   let hash;
@@ -2707,6 +2726,7 @@ async function init() {
   const hp = location.hash.match(/^#portal\?(.*)$/);
   if (hp) { const q = new URLSearchParams(hp[1]); if (q.get('u') && q.get('k')) { try { localStorage.setItem('rf_portal', JSON.stringify({ u: q.get('u'), k: q.get('k') })); localStorage.removeItem('rf_portal_cache'); } catch (e) { } } history.replaceState(null, '', location.pathname + location.search + '#portal'); }
   await acceptSetupHash37();
+  if (S().scriptUrl === DEFAULT_SYNC_URL38 && S().apiKey) await setS({ autoSync: true });
   applyTheme();
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => { if (!p) navigator.storage.persist(); }); } catch (e) { }
   parseHash(); render();
@@ -2715,7 +2735,7 @@ async function init() {
   window.addEventListener('offline', updateSyncBtn);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { sync(false); if (route.name === 'home') loadWeather().then(w => { const el = $('#wxMini'); if (el && w) el.innerHTML = weatherMini(w, true); }).catch(() => { }); } });
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
-  setInterval(() => { if (!document.hidden) sync(false); }, 5 * 60e3);
+  setInterval(() => { if (!document.hidden && S().autoSync && S().apiKey) sync(false); }, 60e3);
   if (S().scriptUrl) sync(false);
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('sw.js').then(reg => {
@@ -6077,10 +6097,10 @@ function repeatRec(coll, id) {
   };
 })();
 </script>
-<script src="improvements.js?v=3.7.4"></script>
-<script src="owner-domain.js?v=3.7.4"></script>
-<script src="owner-data.js?v=3.7.4"></script>
-<script src="owner-ui.js?v=3.7.4"></script>
-<script src="owner-flow.js?v=3.7.4"></script>
+<script src="improvements.js?v=3.8.0"></script>
+<script src="owner-domain.js?v=3.8.0"></script>
+<script src="owner-data.js?v=3.8.0"></script>
+<script src="owner-ui.js?v=3.8.0"></script>
+<script src="owner-flow.js?v=3.8.0"></script>
 </body>
 </html>
