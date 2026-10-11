@@ -514,7 +514,7 @@ body:has(.overlay) .toasts{bottom:auto;top:calc(env(safe-area-inset-top) + 64px)
 /* =========================================================
    สวนยางพารา — แอพบริหารจัดการสวนยาง (Offline-first PWA)
    ========================================================= */
-const APP_VERSION = '3.9.1';
+const APP_VERSION = '3.9.2';
 const APP_NAME = 'สวนยาง';
 // ▼ ใส่ URL ของ Apps Script และรหัส API ตรงนี้ เพื่อให้ทุกเครื่องตั้งค่าอัตโนมัติ (ไม่บังคับ)
 const EMBED = { scriptUrl: '', apiKey: '' };
@@ -887,6 +887,7 @@ function openSheet({ title, body, foot, onClose, wide }) {
 }
 function closeSheet(ov, silent) {
   if (!ov || !ov.isConnected) return;
+  if (ov._sheetObserver) ov._sheetObserver.disconnect();
   ov.remove();
   if (!$('.overlay')) document.body.style.overflow = '';
   if (!silent && ov._onClose) ov._onClose();
@@ -4276,7 +4277,10 @@ document.addEventListener('pointerdown', e => {
   el.appendChild(s); setTimeout(() => s.remove(), 600);
 }, { passive: true });
 function countUp(el) {
-  const txt = el.textContent; const m = txt.match(/-?[\d,]+(?:\.\d+)?/);
+  const txt = el.textContent;
+  // Money must show its actual amount immediately, including during a sync redraw.
+  if (/[฿]|บาท|บ\./.test(txt)) return;
+  const m = txt.match(/-?[\d,]+(?:\.\d+)?/);
   if (!m || !motionOn()) return;
   const target = num(m[0]); if (!isFinite(target) || Math.abs(target) < 10) return;
   const dec = (m[0].split('.')[1] || '').length; const t0 = performance.now(); const dur = 650;
@@ -5539,6 +5543,7 @@ function polishSheet(ov) {
   markSticky(ov);
   // โฟกัสช่องตัวเลขสำคัญช่องแรกที่ยังว่าง
   setTimeout(() => {
+    if (!ov.isConnected) return;
     if ($('.overlay input:focus')) return;
     const first = $$('.sheet-b input.inp', ov).find(i => !i.value && (i.type === 'number' || i.inputMode === 'decimal') && !i.disabled);
     if (first && window.innerHeight > 560) { try { first.focus({ preventScroll: true }); } catch (e) { } }
@@ -5558,7 +5563,7 @@ function markSticky(ov) {
     try {
       const mo = new MutationObserver(debounce(() => { try { decorateDates(ov); stackTables(ov); } catch (e) { } }, 60));
       mo.observe(ov, { childList: true, subtree: true });
-      ov.addEventListener('DOMNodeRemovedFromDocument', () => mo.disconnect());
+      ov._sheetObserver = mo;
     } catch (e) { }
     return ov;
   };
@@ -6102,10 +6107,10 @@ function repeatRec(coll, id) {
   };
 })();
 </script>
-<script src="improvements.js?v=3.9.1"></script>
-<script src="owner-domain.js?v=3.9.1"></script>
-<script src="owner-data.js?v=3.9.1"></script>
-<script src="owner-ui.js?v=3.9.1"></script>
-<script src="owner-flow.js?v=3.9.1"></script>
+<script src="improvements.js?v=3.9.2"></script>
+<script src="owner-domain.js?v=3.9.2"></script>
+<script src="owner-data.js?v=3.9.2"></script>
+<script src="owner-ui.js?v=3.9.2"></script>
+<script src="owner-flow.js?v=3.9.2"></script>
 </body>
 </html>
