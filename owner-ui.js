@@ -81,7 +81,8 @@ quickSale = function () {
     await saveBatch36(entries);
     try { await SCHEMA.sales.afterSave?.(get('sales', d.id), true); } catch (_) { toast('ยอดขายเก็บแล้ว แต่ยังอัปเดตราคาประวัติไม่ได้', 'warn'); }
     try { localStorage.setItem('rf_last_sales', JSON.stringify({ product: d.product, buyer: d.buyer, farmId: d.farmId, plotId: d.plotId, workerIds: d.workerIds, split: 'share', ownerPct: 55, priceBasis: d.priceBasis })); } catch (_) { /* The sale is already committed; remembering defaults is optional. */ }
-    closeSheet(ov, true); toast('บันทึกขายแล้ว · ส่วนของเจ้าของสวน ' + baht(saleCalc(d).ownerAfterTransport), 'ok'); go('ownerSale', d.id);
+    closeSheet(ov, true); go('ownerSale', d.id);
+    undoToast('บันทึกขายแล้ว · เจ้าของสวน ' + baht(saleCalc(d).ownerAfterTransport), async () => { await undoSale40(d.id); go('home'); }, 12000);
   }); update(); if (typeof enhanceSale37 === 'function') enhanceSale37(ov, draft, update); $('#saleWeight36', ov).focus();
 };
 const salesBefore36 = ROUTES.sales;

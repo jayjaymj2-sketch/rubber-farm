@@ -7,6 +7,7 @@ var Farm36 = (() => {
   const yes = v => v === true || v === 'true' || v === 1 || v === '1';
   const live = r => r && !yes(r.deleted);
   const rows = (s, c) => Object.values(s[c] || {}).filter(live);
+  const cleanName = value => String(value || '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
   const dateOK = v => { if (!/^\d{4}-\d{2}-\d{2}$/.test(v || '')) return false; const d = new Date(v + 'T00:00:00Z'); return !isNaN(d) && d.toISOString().slice(0, 10) === v; };
   function sale(r) {
     const weight = n(r.weight), drc = n(r.drc), dry = r.priceBasis === 'dry' && ['latex', 'cuplump'].includes(r.product);
@@ -42,6 +43,11 @@ var Farm36 = (() => {
   const farm = (s, r) => r && (r.farmId || (s.plots || {})[r.plotId]?.farmId || (rows(s, 'farms').length === 1 ? rows(s, 'farms')[0].id : ''));
   function error(s, coll, r, old) {
     const deleting = !live(r);
+    if (!deleting && ['farms', 'workers'].includes(coll)) {
+      const key = x => cleanName(x.name) + (coll === 'farms' ? '|' + cleanName(x.province) : '');
+      if ((!old || !live(old) || key(old) !== key(r)) && cleanName(r.name) && rows(s, coll).some(x => x.id !== r.id && cleanName(x.name) === cleanName(r.name) && (coll !== 'farms' || !cleanName(x.province) || !cleanName(r.province) || cleanName(x.province) === cleanName(r.province))))
+        return coll === 'farms' ? 'มีสวนชื่อนี้อยู่แล้ว กรุณาใช้สวนเดิม' : 'มีคนกรีดรายการนี้อยู่แล้ว กรุณาใช้รายการเดิม';
+    }
     if (['sales', 'expenses'].includes(coll)) {
       const kinds = coll === 'sales' ? ['receive', 'transport'] : ['expense'];
       if (deleting && rows(s, 'settlements').some(x => kinds.includes(x.kind) && (coll === 'sales' ? x.saleId : x.expenseId) === r.id)) return 'รายการนี้มีประวัติรับ/จ่าย ให้ยกเลิกรายการเงินที่เกี่ยวข้องก่อนลบ';
@@ -104,8 +110,7 @@ var Farm36 = (() => {
     return '';
   }
   function similarSales(s, r) {
-    const name = value => String(value || '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
-    return rows(s, 'sales').filter(x => x.id !== r.id && x.date === r.date && farm(s, x) === farm(s, r) && name(x.buyer) === name(r.buyer) && x.product === r.product && Math.abs(n(x.weight) - n(r.weight)) < .001 && Math.abs(sale(x).gross - sale(r).gross) < .01);
+    return rows(s, 'sales').filter(x => x.id !== r.id && x.date === r.date && farm(s, x) === farm(s, r) && cleanName(x.buyer) === cleanName(r.buyer) && x.product === r.product && Math.abs(n(x.weight) - n(r.weight)) < .001 && Math.abs(sale(x).gross - sale(r).gross) < .01);
   }
   // Payments are farm-specific credits against the oldest claims, including wages.
   // This is an allocation for reporting, never a replacement for payment evidence.
@@ -191,5 +196,5 @@ var Farm36 = (() => {
     const farmId = farm(s, r), plotId = coll === 'plots' ? r.id : r.plotId;
     return (!farms.length || farms.includes(farmId)) && (!plots.length || plots.includes(plotId));
   }
-  return { n, round, arr, yes, live, rows, dateOK, sale, settlementRows, totalSettled, outstanding, lot, farm, error, buyers, access, similarSales, workerAllocation, cashOwnership, filterSales };
+  return { n, round, arr, yes, live, rows, dateOK, sale, settlementRows, totalSettled, outstanding, lot, farm, error, buyers, access, similarSales, workerAllocation, cashOwnership, filterSales, cleanName };
 })();

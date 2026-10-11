@@ -13,13 +13,14 @@ function attachEvidence37(ov, key, parent, label) {
     $('[data-photos37]', box).innerHTML = ov.photoRefs37[key].map((ref, i) => `<div class="ph"><img data-ref="${esc(ref)}" alt="หลักฐาน ${i + 1}"><button class="ph-x" type="button" data-remove37="${i}" aria-label="ลบรูปที่ ${i + 1}">×</button></div>`).join('');
     $$('[data-remove37]', box).forEach(b => b.onclick = () => { ov.photoRefs37[key].splice(num(b.dataset.remove37), 1); draw(); }); hydratePhotos(box);
   };
+  box.drawEvidence37 = draw;
   $$('input[type=file]', box).forEach(input => input.onchange = async () => {
     const file = input.files[0]; if (!file) return;
     if (ov.photoRefs37[key].length >= 3) { toast('แนบได้ไม่เกิน 3 รูป', 'warn'); input.value = ''; return; }
     if (!/^image\//.test(file.type) || file.size > 20 * 1024 * 1024) { toast('เลือกรูปภาพขนาดไม่เกิน 20 MB', 'warn'); input.value = ''; return; }
     ov.evidenceBusy37 = num(ov.evidenceBusy37) + 1; $('[data-photo-status37]', box).textContent = 'กำลังเก็บรูป กรุณารอสักครู่';
     $$('[data-save],[data-next37],input[type=file]', ov).forEach(b => b.disabled = true);
-    try { const ref = await addLocalPhoto(await compressImage(file, 700000, 1600)); ov.photoRefs37[key].push(ref); draw(); }
+    try { const ref = await addLocalPhoto(await compressImage(file, 700000, 1600)); ov.photoRefs37[key].push(ref); draw(); if (box.onPhotoAdded40) await box.onPhotoAdded40(ref); }
     catch (error) { toast('เก็บรูปไม่สำเร็จ: ' + error.message, 'warn'); }
     finally { input.value = ''; ov.evidenceBusy37--; $$('[data-save],[data-next37],input[type=file]', ov).forEach(b => b.disabled = !!ov.evidenceBusy37); $('[data-photo-status37]', box).textContent = `แนบแล้ว ${ov.photoRefs37[key].length}/3 รูป · เก็บในเครื่อง`; }
   });
@@ -41,7 +42,13 @@ function enhanceSale37(ov, draft, update) {
   ['saleTransport36', 'saleTransportMethod36', 'saleTransportPaid36', 'saleReceived36'].forEach(id => b.appendChild($('#' + id, ov).closest('.field')));
   b.appendChild($('#receiptFields36', ov)); b.appendChild($('#saleDue36', ov).closest('.field')); b.appendChild(payer);
   steps[0].appendChild(advanced); advanced.querySelector('summary').textContent = 'ชนิดยาง / วิธีคิดราคา / DRC / ค่าหักอื่น / ล็อต';
-  attachEvidence37(ov, 'sale', steps[0], 'รูปใบชั่ง');
+  const scaleEvidence = attachEvidence37(ov, 'sale', steps[0], 'ถ่ายใบชั่ง / อ่านน้ำหนักและราคา');
+  scaleEvidence.open = true; steps[0].prepend(scaleEvidence);
+  if (typeof attachScaleReader40 === 'function') attachScaleReader40(ov, scaleEvidence, update);
+  const extra = document.createElement('details'); extra.innerHTML = '<summary>สวน / แปลง / ผู้รับซื้อ (ถ้ามี)</summary><div class="fields"></div>';
+  a.appendChild(extra);
+  ['saleFarm36', 'salePlot36', 'saleBuyer36'].forEach(id => { const f = $('#' + id, ov).closest('.field'); if (id === 'saleFarm36' && list('farms').length === 1) f.hidden = true; $('div', extra).appendChild(f); });
+  if (workersCount40(ov) === 1 && workerField) workerField.hidden = true;
   const receiptEvidence = attachEvidence37(ov, 'receipt', steps[1], 'สลิปรับเงินค่ายาง');
   steps[2].appendChild($('#salePreview36', ov));
   const recap = document.createElement('div'); recap.className = 'card'; steps[2].prepend(recap);
@@ -97,6 +104,7 @@ async function approveDuplicates37(entries) {
     $('[data-proceed37]', ov).onclick = () => { resolve(true); closeSheet(ov, true); };
   });
   if (!approved) throw new Error('ยังไม่บันทึกเพิ่ม กรุณาตรวจรายการเดิม');
+  entries.filter(([coll]) => coll === 'sales').forEach(([, r]) => { r.duplicateApproved = true; });
 }
 const saveRecBefore37 = saveRec, saveBatchBefore37 = saveBatch36;
 saveRec = async function(coll, record, options) { await approveDuplicates37([[coll, record]]); return saveRecBefore37(coll, record, options); };
@@ -304,6 +312,140 @@ function installViewport392() {
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installViewport392);
 else installViewport392();
+function workersCount40(ov) { return $$('input[name=saleWorker36]', ov).length; }
+function parseScale40(text) {
+  const normalized = String(text || '').split(/\r?\n/).map(normalizeThaiText).join('\n'), result = parseScaleText(normalized);
+  const match = normalized.match(/(?:วันที่|date)\s*[:：]?\s*(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/i);
+  result.date = '';
+  if (match) {
+    let year = Number(match[3]); if (year < 100) year += 2500; if (year > 2400) year -= 543;
+    const date = `${year}-${match[2].padStart(2,'0')}-${match[1].padStart(2,'0')}`; if (Farm36.dateOK(date)) result.date = date;
+  }
+  return result;
+}
+function attachScaleReader40(ov, box, update) {
+  const button = document.createElement('button'); button.className = 'btn block'; button.type = 'button'; button.textContent = 'อ่านใบชั่งช่วยกรอก'; box.appendChild(button);
+  const read = async ref => {
+    if (!ref) return toast('ถ่ายหรือเลือกรูปใบชั่งก่อน', 'warn');
+    if (!navigator.onLine) return toast('รูปเก็บไว้ในเครื่องแล้ว อ่านตัวเลขได้เมื่อกลับมาออนไลน์ หรือกรอกเองได้เลย', 'warn');
+    button.disabled = true; button.textContent = 'กำลังอ่านใบชั่ง...'; ov.evidenceBusy37 = num(ov.evidenceBusy37) + 1;
+    $$('[data-save],[data-next37],input[type=file]', ov).forEach(b => b.disabled = true);
+    try {
+      if (isLocalRef(ref)) {
+        const dataUrl = await store.photo('get', ref), uploaded = await api('photoUpload', { dataUrl, name: 'ใบชั่ง' });
+        const cloudRef = 'd:' + uploaded.id; await store.photo('put', cloudRef, dataUrl);
+        ov.photoRefs37.sale = ov.photoRefs37.sale.map(x => x === ref ? cloudRef : x); ref = cloudRef; box.drawEvidence37();
+      }
+      const response = await api('scale.read', { id: String(ref).slice(2) });
+      if (!ov.isConnected) return;
+      const parsed = parseScale40(response.text || '');
+      if (!parsed.weight && !parsed.price && !parsed.date) { toast('อ่านตัวเลขไม่ชัด รูปเก็บไว้แล้ว กรอกตามใบชั่งได้เลย', 'warn'); return; }
+      const review = openSheet({ title: 'ตรวจตัวเลขที่อ่านจากใบชั่ง', body: `<p>ตรวจเทียบกับรูปก่อนใช้ ตัวเลขที่ไม่ชัดให้แก้เอง การอ่านรูปยังไม่บันทึกยอดขาย</p>${input36('ocrWeight40','น้ำหนัก (กก.)',parsed.weight || '')}${input36('ocrPrice40','ราคา (บาท/กก.)',parsed.price || '')}${input36('ocrDate40','วันที่ขาย',parsed.date || $('#saleDate36',ov).value,'date')}${input36('ocrDrc40','DRC หากมี (%)',parsed.drc || '')}<details><summary>ข้อความจากใบชั่ง</summary><pre style="white-space:pre-wrap">${esc(response.text || '')}</pre></details>`, foot: '<button class="btn" data-cancel>กรอกเอง</button><button class="btn pri" data-use40>ตรวจแล้ว · ใช้ตัวเลขนี้</button>' });
+      $('[data-cancel]',review).onclick = () => closeSheet(review,true);
+      $('[data-use40]',review).onclick = () => {
+        if (!ov.isConnected) return closeSheet(review,true);
+        const weight = $('#ocrWeight40',review).value, price = $('#ocrPrice40',review).value, date = $('#ocrDate40',review).value, drc = $('#ocrDrc40',review).value;
+        if ((weight && !(num(weight)>0)) || (price && !(num(price)>0)) || !Farm36.dateOK(date) || (drc && (!(num(drc)>0) || num(drc)>100))) return toast('ตรวจน้ำหนัก ราคา วันที่ และ DRC อีกครั้ง', 'warn');
+        for (const [source,target] of [['ocrWeight40','saleWeight36'],['ocrPrice40','salePrice36'],['ocrDate40','saleDate36'],['ocrDrc40','saleDrc36']]) {
+          const value = $('#'+source,review).value; if (value) { const field = $('#'+target,ov); field.value = value; field.dispatchEvent(new Event('input',{bubbles:true})); field.dispatchEvent(new Event('change',{bubbles:true})); }
+        }
+        update(); closeSheet(review,true); toast('เติมตัวเลขแล้ว ตรวจสถานะรับเงินในขั้นถัดไป', 'ok');
+      };
+    } catch (error) { if (ov.isConnected) toast('ยังอ่านใบชั่งไม่ได้: ' + error.message + ' · รูปยังเก็บไว้ กรอกเองได้', 'warn'); }
+    finally { ov.evidenceBusy37--; if (button.isConnected) { button.disabled = false; button.textContent = 'อ่านใบชั่งช่วยกรอก'; } $$('[data-save],[data-next37],input[type=file]',ov).forEach(b=>b.disabled=!!ov.evidenceBusy37); }
+  };
+  button.onclick = () => read(ov.photoRefs37.sale[0]); box.onPhotoAdded40 = read;
+}
+async function undoSale40(id) {
+  const s = get('sales',id); if (!s) throw new Error('ไม่พบรายการขาย');
+  if (list('payments',p=>farmOf(p)===farmOf(s) && p.date>=s.date && Farm36.arr(s.workerIds).includes(p.workerId)).length) throw new Error('มีประวัติจ่ายคนกรีดแล้ว กรุณาตรวจรายละเอียดก่อนยกเลิกยอดขาย');
+  const entries = list('settlements',r=>r.saleId===id).map(r=>['settlements',{...r,deleted:1,undoGroup40:id}]);
+  list('prices',r=>r.saleId===id).forEach(r=>entries.push(['prices',{...r,deleted:1,undoGroup40:id}]));
+  entries.push(['sales',{...s,deleted:1,undoGroup40:id}]); await saveBatch36(entries); toast('ยกเลิกบันทึกครั้งนี้แล้ว กู้คืนได้จากถังขยะ', 'ok');
+}
+const saveRecBeforeUndo40 = saveRec;
+saveRec = async function(coll, record, ...options) {
+  const old = record.id && DB[coll]?.get(record.id);
+  if (Farm36.yes(old?.deleted) && old.undoGroup40 && !Farm36.yes(record.deleted) && ['sales','settlements','prices'].includes(coll)) {
+    const entries = [];
+    for (const c of ['sales','prices','settlements']) for (const r of DB[c].values()) if (Farm36.yes(r.deleted) && r.undoGroup40 === old.undoGroup40) {
+      const restored = {...r,deleted:0}; delete restored.undoGroup40; entries.push([c,restored]);
+    }
+    await saveBatch36(entries); return DB[coll].get(record.id);
+  }
+  return saveRecBeforeUndo40(coll,record,...options);
+};
+function saleStages40(s, state = state36(), cutoff = today()) {
+  const allocation = Farm36.workerAllocation(state,cutoff,Farm36.farm(state,s))[s.id], receive = Farm36.outstanding(state,'receive',s,cutoff);
+  const transport = s.transportMethod === 'withheld' ? 0 : Farm36.outstanding(state,'transport',s,cutoff);
+  const worker = allocation?.remaining ?? saleCalc(s).tapperTotal;
+  return { receive, transport, worker, complete: receive === 0 && transport === 0 && worker === 0 };
+}
+let backupResult40 = null, backupRequest40 = null, backupCheckedAt40 = 0;
+function backupLabel40(status) {
+  if (!status) return 'กำลังตรวจการสำรองข้อมูล';
+  if (status.failedAt > status.at) return 'สำรองครั้งล่าสุดไม่สำเร็จ กรุณาตรวจข้อมูล';
+  if (!status.scheduled) return 'ยังไม่ได้ตั้งสำรองอัตโนมัติ';
+  if (!status.at) return 'ตั้งสำรองรายวันแล้ว กำลังรอไฟล์แรก';
+  if (!status.complete) return `สำรองข้อมูลแล้ว แต่มีรูปที่ยังไม่ครบ ${status.missing} รูป`;
+  if (Date.now()-status.at > 2*86400000) return 'ไฟล์สำรองเกิน 2 วัน กรุณาตรวจระบบ';
+  return `สำรองรายวันพร้อมรูปแล้ว · ${new Date(status.at).toLocaleDateString('th-TH')} · ${status.verified ? 'ตรวจไฟล์ผ่าน' : 'รอตรวจไฟล์'}`;
+}
+function renderBackupStatus40() {
+  const el = $('#backupStatus40'); if (el) el.textContent = backupLabel40(backupResult40);
+  if (!navigator.onLine || !hasGardenConnection39() || Date.now()-backupCheckedAt40 < 300000 || backupRequest40) return;
+  backupCheckedAt40 = Date.now();
+  backupRequest40 = api('backup.status').then(r=>{backupResult40=r.backup;const box=$('#backupStatus40');if(box)box.textContent=backupLabel40(r.backup);}).catch(()=>{const box=$('#backupStatus40');if(box)box.textContent='ยังตรวจสำรองบนระบบกลางไม่ได้ · สำรองไฟล์ในเครื่องได้ที่เมนูเพิ่มเติม';}).finally(()=>{backupRequest40=null;});
+}
+function auditIssues40() {
+  const s=state36(), issues=[];
+  for (const c of ['farms','workers']) {
+    const seen=new Set(); for (const r of list(c)) { const key=Farm36.cleanName(r.name)+(c==='farms'?'|'+Farm36.cleanName(r.province):''); if(seen.has(key))issues.push(c==='farms'?'พบสวนชื่อซ้ำ':'พบคนกรีดชื่อซ้ำ');seen.add(key); }
+  }
+  for (const c of ['sales','settlements','rubberlots']) for (const r of list(c)) { const error=Farm36.error(s,c,r,r);if(error)issues.push(error); }
+  return [...new Set(issues)];
+}
+const homeBefore40 = ROUTES.home.render;
+ROUTES.home.render = function(main) {
+  if (!ownerMode36()) return homeBefore40.call(this,main);
+  if (!list('farms').length) return ownerStart36(main);
+  const cash=cashReport35('0000-01-01',today(),curFarm), owned=Farm36.cashOwnership(state36(),cash.net,today(),curFarm), issues=auditIssues40();
+  const latest=list('sales',inFarm).sort(byDateDesc).slice(0,3), workers=activeWorkers().filter(w=>w.payType==='share');
+  main.innerHTML=`<section class="card owner36 owner-hero40"><div class="row"><h2>สวนยาง</h2><span class="sp"></span><span class="badge">${navigator.onLine?'ออนไลน์':'ใช้ออฟไลน์'}</span></div><p>${esc(curFarm==='all'&&list('farms').length===1?list('farms')[0].name:curFarm==='all'?'ทุกสวน':farmName(curFarm))}</p><div class="money-label40">เงินส่วนเจ้าของสวนในบันทึก</div><div class="money40">${baht(owned.ownerCash)}</div><p class="hint">จากเงินรับ–จ่ายจริง หักเงินที่ต้องกันให้คนกรีดแล้ว ไม่ใช่ยอดธนาคาร</p><button class="btn" data-go="cash">ดูที่มาของยอดเงิน</button></section>
+  <div class="grid2 summary40"><button class="card" data-go="debts"><span>ค่ายางค้างรับ</span><b>${baht(cash.receivable)}</b><small>แตะดูรายการ</small></button><button class="card" data-go="workers"><span>คนกรีดยางค้างจ่าย</span><b>${baht(cash.workerOwed)}</b><small>เงินที่ยังต้องจ่ายจริง</small></button></div>
+  <section class="actions36 daily-actions40"><button class="btn pri" id="ownerSale36">${ic('coins')}ขายยาง</button><button class="btn" id="ownerPay36">${ic('wallet')}จ่ายคนกรีดยาง</button><button class="btn" id="ownerExpense36">${ic('receipt')}บันทึกค่าใช้จ่าย</button></section>
+  ${syncErr?`<div class="alert" role="status">ยังส่งข้อมูลไม่สำเร็จ · ${esc(syncErr)}<button class="btn" id="retryHome40">ลองส่งอีกครั้ง</button></div>`:dirtyCount()?'<div class="alert" role="status">ข้อมูลเก็บในเครื่องแล้ว กำลังรอส่งเมื่อออนไลน์</div>':''}
+  ${issues.length?`<section class="card"><h3>เรื่องที่ควรตรวจ</h3>${issues.map(x=>`<p>${esc(x)}</p>`).join('')}<button class="btn" data-go="conflicts">ตรวจรายการ</button></section>`:''}
+  <section class="card"><h3>รายการขายล่าสุด</h3>${latest.map(s=>{const q=saleStages40(s);return `<button class="owner-sale-row36" data-go="ownerSale/${esc(s.id)}"><span>${thDate(s.date)} · ${fmt(s.weight,2)} กก.<small class="status-note40">${q.complete?'รับและจ่ายครบแล้ว':q.receive?'ยังรับค่ายางไม่ครบ':q.transport?'ยังจ่ายค่ารถไม่ครบ':'ยังจ่ายคนกรีดไม่ครบ'}</small></span><b>${baht(saleCalc(s).ownerAfterTransport)}</b></button>`;}).join('')||'<p>ยังไม่มีรายการขาย</p>'}<button class="btn" data-go="sales">ดูการขายทั้งหมด</button></section>
+  <section class="card"><h3>คนกรีดยาง</h3>${workers.map(w=>`<div class="row wrap"><b>${esc(w.name)}</b><span class="sp"></span><span>ค้าง ${baht(workerLedger(w.id).balance)}</span><button class="btn" data-workerpay36="${esc(w.id)}">จ่ายเงิน</button></div>`).join('')||'<p>ยังไม่มีรายการคนกรีด</p>'}</section>
+  <details class="card"><summary>เพิ่มเติม / สำรองข้อมูล</summary><p id="backupStatus40" role="status">${backupLabel40(backupResult40)}</p><p class="hint">สำรองเฉพาะข้อมูลที่ส่งถึงระบบกลางแล้ว รูปและรายการที่ยังอยู่ในเครื่องให้ส่งก่อน</p><button class="btn" data-go="safety">สำรอง / กู้คืน / ประวัติแก้ไข</button><button class="btn" data-go="connection37">รับข้อมูลล่าสุด</button><button class="btn" data-go="menu">เครื่องมือดูแลสวนทั้งหมด</button><button class="link" id="ownerConfig36">ตั้งค่าหน้าเจ้าของสวน</button></details>`;
+  $('#ownerSale36',main).onclick=quickSale; $('#ownerPay36',main).onclick=()=>workerPayment36(); $('#ownerExpense36',main).onclick=()=>openForm('expenses',null,{paid:true,paidDate:today()}); $('#ownerConfig36',main).onclick=configureOwner36;
+  $$('[data-workerpay36]',main).forEach(b=>b.onclick=()=>workerPayment36(b.dataset.workerpay36)); if($('#retryHome40',main))$('#retryHome40',main).onclick=()=>sync(true);
+  renderBackupStatus40();
+};
+const saleBefore40=ROUTES.ownerSale.render;
+ROUTES.ownerSale.render=function(main,id){
+  saleBefore40.call(this,main,id); const s=get('sales',id);if(!s)return;const q=saleStages40(s);
+  main.insertAdjacentHTML('afterbegin',`<section class="card"><h2>${q.complete?'รับและจ่ายครบแล้ว':'ตรวจรับ–จ่ายครั้งนี้'}</h2>${[['receive','รับเงินค่ายาง',q.receive],['transport','จ่ายค่ารถ',q.transport],['worker','จ่ายคนกรีดยาง',q.worker]].map(([key,label,amount],i)=>`<div class="stage40"><span class="stage-number40">${i+1}</span><div><b>${label}</b><p>${amount>0?'ค้าง '+baht(amount):key==='transport'&&s.transportMethod==='withheld'?'ผู้ซื้อหักค่ารถแล้ว':'ครบแล้ว'}</p></div>${amount>0?`<button class="btn" data-stage40="${key}">บันทึก${key==='receive'?'รับ':'จ่าย'}</button>`:'<span class="badge">✓</span>'}</div>`).join('')}<p class="hint">ส่วนแบ่งคนกรีดจัดสรรตามรายการเก่าก่อน ปุ่มจ่ายเงินจะแสดงยอดค้างรวมของคนกรีด</p><button class="link" id="undoSale40">ยกเลิกบันทึกขายครั้งนี้</button></section>`);
+  $$('[data-stage40]',main).forEach(b=>b.onclick=()=>b.dataset.stage40==='worker'?workerPayment36(Farm36.arr(s.workerIds).length===1?Farm36.arr(s.workerIds)[0]:undefined):settlementSheet36('sales',s,b.dataset.stage40));
+  $('#undoSale40',main).onclick=async()=>{if(!(await confirmBox('ยกเลิกบันทึกขายครั้งนี้ และรายการรับค่ายาง/ค่ารถที่ผูกไว้?','ยกเลิกบันทึก')))return;try{await undoSale40(id);go('home');}catch(e){toast(e.message,'warn');}};
+};
+const modernStyle40=document.createElement('style');
+modernStyle40.textContent=`
+body.owner-mode36{--bg:#f3f6f0;--r:20px;--shadow:0 3px 16px rgba(20,60,40,.055)}
+:root[data-theme=dark] body.owner-mode36{--bg:#101b16}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) body.owner-mode36{--bg:#101b16}}
+.owner-hero40{background:linear-gradient(135deg,#064e3b,#087653);color:#fff;padding:22px}
+.owner-hero40 h2{font-size:24px}.owner-hero40 .hint{color:#e0f2e8;line-height:1.7}.owner-hero40>.row{gap:10px}.owner-hero40 .btn{background:#fff;color:#064e3b;border-color:#fff}.owner-hero40 .badge{color:#fff;background:rgba(255,255,255,.16)}
+.money-label40{font-size:18px;margin-top:20px}.money40{font-size:32px;font-size:clamp(28px,7vw,46px);font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.summary40>.card{text-align:left;font:inherit;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:8px}.summary40 b{font-size:24px;overflow-wrap:anywhere}.summary40 small,.status-note40{font-size:14px;color:var(--ink2)}
+.status-note40{display:block;margin-top:6px}.daily-actions40{grid-template-columns:repeat(3,minmax(0,1fr))!important}.daily-actions40 .btn{flex-direction:column;gap:8px;font-size:18px!important;min-height:104px!important}
+.fields>details{grid-column:1/-1}.stage40{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}.stage40>div{flex:1;min-width:0}.stage40 p{margin:4px 0}.stage-number40{border-radius:50%;width:30px;height:30px;display:grid;place-items:center;background:var(--pri-soft);color:var(--pri);flex-shrink:0}.stage40 .btn{flex-shrink:0}
+@media(max-width:480px){.daily-actions40{grid-template-columns:1fr!important;gap:10px}.daily-actions40 .btn{flex-direction:row!important;min-height:56px!important;font-size:18px!important}.summary40{grid-template-columns:1fr 1fr!important}.summary40 b{font-size:20px}.owner-hero40{padding:18px}.stage40{flex-wrap:wrap}.stage40 .btn{min-height:48px}.owner-sale-row36{gap:8px}}
+@media(max-width:320px){.summary40{grid-template-columns:1fr!important}.stage40 .btn{width:100%}}
+body.owner-mode36 .nav [data-nav=__add]{display:none}
+@media print{.owner-hero40{background:#fff;color:#000}.owner-hero40 .hint{color:#000}}
+`;document.head.appendChild(modernStyle40);
 const style37 = document.createElement('style');
 const joinStyle38 = document.createElement('style'); joinStyle38.textContent = '.owner36 details{margin-top:24px}.owner36 details .btn{margin-top:12px}'; document.head.appendChild(joinStyle38);
 style37.textContent = '.sale-step37[hidden],[data-save][hidden],.sheet button[hidden]{display:none!important}.sale-progress37{font-size:18px;font-weight:700;padding:10px 0;color:var(--pri)}.evidence37{margin:12px 0}.evidence37 .btn{margin:8px 0}.sale-slip37{max-width:740px;margin:auto}.sale-slip37 h2{line-height:1.5}.sale-slip37 .kv{overflow-wrap:anywhere}.sale-step37 .fields{margin-bottom:12px}@media(max-width:480px){.sale-step37 .field.half{width:100%;flex-basis:100%}.sale-progress37{font-size:18px}.sale-step37 .btn{min-height:48px}.sheet-f{flex-wrap:wrap}.sale-slip37{font-size:16px}}@media print{.sale-slip37 .photos{break-inside:avoid}.no-print{display:none!important}.sale-slip37{font-size:13pt;color:#000}}'; document.head.appendChild(style37);
